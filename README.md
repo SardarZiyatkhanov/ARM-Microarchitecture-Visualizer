@@ -1,6 +1,5 @@
 # ARM Microarchitecture Visualizer
 
-# ARM Microarchitecture Visualizer
 
 ARM Microarchitecture Visualizer is a **Senior Design Project (SDP)** that provides an interactive and educational visualization of **ARM assembly instruction execution** at the **microarchitecture and pipeline level**.
 
