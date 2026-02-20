@@ -1,38 +1,24 @@
-
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
-// Your web app's Firebase configuration
-// For this demo, we use environment variables.
-// In a real scenario, these would be populated in a .env file.
+// Ваша конфигурация Firebase
 const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: import.meta.env.VITE_FIREBASE_APP_ID
+    apiKey: "AIzaSyB11VKKNxt9nkCfjAhB46GIvoy9C_KQNFg",
+    authDomain: "playarm-project.firebaseapp.com",
+    projectId: "playarm-project",
+    storageBucket: "playarm-project.firebasestorage.app",
+    messagingSenderId: "894259892273",
+    appId: "1:894259892273:web:50d91a1c7869f1cefa0510",
+    measurementId: "G-2JG9NWEG9F"
 };
 
-// Initialize Firebase
-let app;
-let db: import("firebase/firestore").Firestore | null = null;
-let auth: import("firebase/auth").Auth | null = null;
-let isFirebaseInitialized = false;
+// Инициализация самого приложения Firebase
+const app = initializeApp(firebaseConfig);
 
-if (firebaseConfig.apiKey) {
-    try {
-        app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
-        isFirebaseInitialized = true;
-        console.log("Firebase initialized successfully.");
-    } catch (e) {
-        console.error("Firebase initialization failed:", e);
-    }
-} else {
-    console.warn("Firebase configuration missing. Using local storage fallback.");
-}
+// Инициализация и экспорт базы данных (Firestore) и системы авторизации (Auth)
+export const db = getFirestore(app);
+export const auth = getAuth(app);
 
-export { db, auth, isFirebaseInitialized };
+// 👇 ВОТ ЭТА СТРОКА ИСПРАВИТ ОШИБКУ БЕЛОГО ЭКРАНА 👇
+export const isFirebaseInitialized = !!firebaseConfig.apiKey;
