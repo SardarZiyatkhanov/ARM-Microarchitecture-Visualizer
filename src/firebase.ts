@@ -1,6 +1,7 @@
 
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 // Your web app's Firebase configuration
 // For this demo, we use environment variables.
@@ -17,12 +18,14 @@ const firebaseConfig = {
 // Initialize Firebase
 let app;
 let db: import("firebase/firestore").Firestore | null = null;
+let auth: import("firebase/auth").Auth | null = null;
 let isFirebaseInitialized = false;
 
 if (firebaseConfig.apiKey) {
     try {
         app = initializeApp(firebaseConfig);
         db = getFirestore(app);
+        auth = getAuth(app);
         isFirebaseInitialized = true;
         console.log("Firebase initialized successfully.");
     } catch (e) {
@@ -32,4 +35,4 @@ if (firebaseConfig.apiKey) {
     console.warn("Firebase configuration missing. Using local storage fallback.");
 }
 
-export { db, isFirebaseInitialized };
+export { db, auth, isFirebaseInitialized };
