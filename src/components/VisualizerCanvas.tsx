@@ -414,3 +414,4 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
         </div>
     );
 };
+export default VisualizerCanvas;

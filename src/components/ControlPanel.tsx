@@ -91,3 +91,5 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         </div>
     );
 };
+
+export default ControlPanel;
