@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { fabric } from 'fabric';
 import { PipelineState, CpuState } from '../core/types';
 
@@ -17,6 +17,32 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
     const currentStage = stages.find(s => pipelineState?.[s]?.instruction);
     const currentInstruction = currentStage ? pipelineState?.[currentStage]?.instruction : null;
     const controlSignals = pipelineState?.Decode?.controlSignals;
+    const cssVar = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+    const [theme, setTheme] = useState(
+        document.documentElement.getAttribute("data-theme") || "dark"
+    );
+
+    useEffect(() => {
+        const el = document.documentElement;
+
+        const updateTheme = () => {
+            setTheme(el.getAttribute("data-theme") || "dark");
+        };
+
+        updateTheme();
+
+        const observer = new MutationObserver((mutations) => {
+            for (const m of mutations) {
+                if (m.type === "attributes" && m.attributeName === "data-theme") {
+                    updateTheme();
+                }
+            }
+        });
+
+        observer.observe(el, { attributes: true });
+        return () => observer.disconnect();
+    }, []);
 
     // Console logging
     useEffect(() => {
@@ -44,6 +70,11 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
 
             const width = canvas.getWidth();
             const height = canvas.getHeight();
+            const textSecondary = cssVar('--text-secondary') || '#8b949e';
+            const accent = cssVar('--accent-color') || '#2f81f7';
+            const vizBlock = cssVar('--viz-block') || '#161b22';
+            const vizStageInactive = cssVar('--viz-stage-inactive') || '#0f1115';
+            const vizStroke = cssVar('--viz-stroke') || '#30363d';
 
             // Draw stage indicators
             const stageLabels = ['Fetch', 'Decode', 'Execute', 'Memory', 'WriteBack'];
@@ -59,8 +90,8 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
                     left: x,
                     top: y,
                     radius: 10,
-                    fill: isActiveStage ? '#2f81f7' : '#0f1115',
-                    stroke: isActiveStage ? '#2f81f7' : '#30363d',
+                    fill: isActiveStage ? accent : vizStageInactive,
+                    stroke: isActiveStage ? accent : vizStroke,
                     strokeWidth: 2,
                     originX: 'center',
                     originY: 'center',
@@ -72,7 +103,7 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
                     left: x,
                     top: y + 25,
                     fontSize: 10,
-                    fill: isActiveStage ? '#2f81f7' : '#8b949e',
+                    fill: isActiveStage ? accent : textSecondary,
                     originX: 'center',
                     selectable: false,
                     fontFamily: 'Plus Jakarta Sans',
@@ -83,7 +114,7 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
 
                 if (i < stageLabels.length - 1) {
                     const line = new fabric.Line([x + 10, y, (i + 1.5) * stageWidth - 10, y], {
-                        stroke: isActiveStage ? '#2f81f7' : '#30363d',
+                        stroke: isActiveStage ? accent : vizStroke,
                         strokeWidth: 2,
                         selectable: false
                     });
@@ -102,7 +133,7 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
 
             // Helper to get active style
             const getBlockStyle = (isActive: boolean, baseColor: string) => ({
-                stroke: isActive ? '#2f81f7' : baseColor,
+                stroke: isActive ? accent : baseColor,
                 strokeWidth: 2,
                 shadow: isActive ? new fabric.Shadow({ color: 'rgba(47, 129, 247, 0.4)', blur: 20 }) : undefined
             });
@@ -113,17 +144,17 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
                 top: compY - 30,
                 width: 100,
                 height: 60,
-                fill: '#161b22',
+                fill: vizBlock,
                 rx: 4,
                 ry: 4,
                 selectable: false,
-                ...getBlockStyle(isInstMemActive, '#58a6ff')
+                ...getBlockStyle(isInstMemActive, vizStroke)
             });
             const instMemText = new fabric.Text('INST\nMEM', {
                 left: 100,
                 top: compY,
                 fontSize: 12,
-                fill: isInstMemActive ? '#2f81f7' : '#8b949e',
+                fill: isInstMemActive ? accent : textSecondary,
                 originX: 'center',
                 originY: 'center',
                 selectable: false,
@@ -138,17 +169,17 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
                 top: compY - 50,
                 width: 100,
                 height: 100,
-                fill: '#161b22',
+                fill: vizBlock,
                 rx: 4,
                 ry: 4,
                 selectable: false,
-                ...getBlockStyle(isRegFileActive, '#3fb950')
+                ...getBlockStyle(isRegFileActive, vizStroke)
             });
             const regFileText = new fabric.Text('REG\nFILE', {
                 left: 250,
                 top: compY,
                 fontSize: 12,
-                fill: isRegFileActive ? '#2f81f7' : '#8b949e',
+                fill: isRegFileActive ? accent : textSecondary,
                 originX: 'center',
                 originY: 'center',
                 selectable: false,
@@ -163,17 +194,17 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
                 top: compY - 40,
                 width: 80,
                 height: 80,
-                fill: '#161b22',
+                fill: vizBlock,
                 rx: 4,
                 ry: 4,
                 selectable: false,
-                ...getBlockStyle(isALUActive, '#d29922')
+                ...getBlockStyle(isALUActive, vizStroke)
             });
             const aluText = new fabric.Text('ALU', {
                 left: 390,
                 top: compY - 20,
                 fontSize: 14,
-                fill: isALUActive ? '#2f81f7' : '#8b949e',
+                fill: isALUActive ? accent : textSecondary,
                 originX: 'center',
                 originY: 'center',
                 selectable: false,
@@ -202,7 +233,7 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
                         left: 390,
                         top: compY + 15,
                         fontSize: 10,
-                        fill: '#8b949e',
+                        fill: textSecondary,
                         originX: 'center',
                         originY: 'center',
                         selectable: false,
@@ -219,17 +250,17 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
                 top: compY - 40,
                 width: 100,
                 height: 80,
-                fill: '#161b22',
+                fill: vizBlock,
                 rx: 4,
                 ry: 4,
                 selectable: false,
-                ...getBlockStyle(isDataMemActive, '#a371f7')
+                ...getBlockStyle(isDataMemActive, vizStroke)
             });
             const dataMemText = new fabric.Text('DATA\nMEM', {
                 left: 530,
                 top: compY,
                 fontSize: 12,
-                fill: isDataMemActive ? '#2f81f7' : '#8b949e',
+                fill: isDataMemActive ? accent : textSecondary,
                 originX: 'center',
                 originY: 'center',
                 selectable: false,
@@ -246,7 +277,7 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
         return () => {
             canvas.dispose();
         };
-    }, [pipelineState, currentStage, controlSignals]);
+    }, [pipelineState, currentStage, controlSignals, theme]);
 
     // Calculate active arrows
     const isArrow1Active = currentStage === 'Decode';
@@ -337,7 +368,7 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
                     position: 'absolute',
                     bottom: '10px',
                     right: '10px',
-                    backgroundColor: 'rgba(10, 12, 16, 0.95)',
+                    backgroundColor: 'color-mix(in srgb, var(--panel-bg) 92%, transparent)',
                     backdropFilter: 'blur(4px)',
                     border: '1px solid var(--accent-color)',
                     borderRadius: '6px',

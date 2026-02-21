@@ -1,4 +1,5 @@
 import React from 'react';
+import ThemeToggle from "./ThemeToggle";
 
 interface ControlPanelProps {
     onPlay: () => void;
@@ -26,7 +27,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 }) => {
     return (
         <div className="controls-container">
-            <footer className="footer controls" style={{ justifyContent: 'center', alignItems: 'center', flexWrap: 'nowrap', padding: '0.5rem 0' }}>
+            <footer className="footer controls footer-controls">
                 {isReplayMode ? (
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <button className="btn btn-secondary" onClick={onExitReplay}>
@@ -46,38 +47,44 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                     </div>
                 ) : (
                     <>
-                        <button className="btn btn-reset" onClick={onReset}>
-                            ↺ Reset
-                        </button>
-                        <button className="btn btn-step" onClick={onStep} disabled={isPlaying}>
-                            ↷ Step
-                        </button>
-                        <button className="btn btn-play" onClick={onPlay}>
-                            {isPlaying ? '⏸ Pause' : '▶ Play'}
-                        </button>
+                        <div className="controls-center">
+                            <button className="btn btn-reset" onClick={onReset}>
+                                ↺ Reset
+                            </button>
+                            <button className="btn btn-step" onClick={onStep} disabled={isPlaying}>
+                                ↷ Step
+                            </button>
+                            <button className="btn btn-play" onClick={onPlay}>
+                                {isPlaying ? '⏸ Pause' : '▶ Play'}
+                            </button>
 
-                        <div style={{ width: '1px', height: '24px', background: 'var(--border-color)', margin: '0 0.75rem' }} />
+                            <div style={{ width: '1px', height: '24px', background: 'var(--border-color)', margin: '0 0.75rem' }} />
 
-                        {onSaveProgram && (
-                            <button className="btn btn-outline" onClick={onSaveProgram}>
-                                💾 Save
-                            </button>
-                        )}
-                        {onLoadPrograms && (
-                            <button className="btn btn-outline" onClick={onLoadPrograms}>
-                                📁 Load
-                            </button>
-                        )}
-                        {onSaveRun && isPlaying && (
-                            <button className="btn btn-outline" onClick={onSaveRun}>
-                                ⏺ Record
-                            </button>
-                        )}
-                        {onReplayRun && !isPlaying && (
-                            <button className="btn btn-outline" onClick={onReplayRun}>
-                                ⟲ Replay
-                            </button>
-                        )}
+                            {onSaveProgram && (
+                                <button className="btn btn-outline" onClick={onSaveProgram}>
+                                    💾 Save
+                                </button>
+                            )}
+                            {onLoadPrograms && (
+                                <button className="btn btn-outline" onClick={onLoadPrograms}>
+                                    📁 Load
+                                </button>
+                            )}
+                            {onSaveRun && isPlaying && (
+                                <button className="btn btn-outline" onClick={onSaveRun}>
+                                    ⏺ Record
+                                </button>
+                            )}
+                            {onReplayRun && !isPlaying && (
+                                <button className="btn btn-outline" onClick={onReplayRun}>
+                                    ⟲ Replay
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="controls-center">
+                            <ThemeToggle />
+                        </div>
                     </>
                 )}
             </footer>
