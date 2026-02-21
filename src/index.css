@@ -2,6 +2,8 @@
 
 :root {
   --bg-color: #050505;
+  --bg-glow-1: rgba(47, 129, 247, 0.08);
+  --bg-glow-2: rgba(47, 129, 247, 0.03);
   --panel-bg: #0f1115;
   --glass-bg: rgba(22, 27, 34, 0.7);
   --viz-bg: #010409;
@@ -22,9 +24,11 @@
   --font-mono: 'JetBrains Mono', monospace;
 }
 
-/* Light Theme (enabled when html has data-theme="light") */
+/* Light Theme */
 :root[data-theme="light"] {
   --bg-color: #f5f7fb;
+  --bg-glow-1: rgba(37, 99, 235, 0.10);
+  --bg-glow-2: rgba(37, 99, 235, 0.04);
   --panel-bg: #ffffff;
   --glass-bg: rgba(255, 255, 255, 0.75);
   --viz-bg: #ffffff;
@@ -42,6 +46,18 @@
   --danger-color: #dc2626;
 }
 
+:root[data-theme="dark"] .btn-outline.theme-active {
+  border-color: var(--accent-color);
+  color: #ffffff;
+  background: var(--accent-color);
+}
+
+:root[data-theme="light"] .btn-outline.theme-active {
+  border-color: var(--accent-color);
+  color: #ffffff;
+  background: var(--accent-color);
+}
+
 * {
   box-sizing: border-box;
   -webkit-font-smoothing: antialiased;
@@ -55,8 +71,8 @@ body {
   margin: 0;
   background-color: var(--bg-color);
   background-image:
-    radial-gradient(circle at 50% 0%, rgba(47, 129, 247, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 0% 100%, rgba(47, 129, 247, 0.03) 0%, transparent 40%);
+    radial-gradient(circle at 50% 0%, var(--bg-glow-1) 0%, transparent 50%),
+    radial-gradient(circle at 0% 100%, var(--bg-glow-2) 0%, transparent 40%);
   color: var(--text-primary);
   font-family: var(--font-sans);
   min-height: 100vh;
@@ -82,16 +98,18 @@ body {
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid var(--border-color);
+  color: #f0f6fc !important;
 }
 
 .header h1 {
   font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+  background: none !important;
   -webkit-background-clip: text;
   background-clip: text;
-  -webkit-text-fill-color: transparent;
+  -webkit-text-fill-color: #f0f6fc !important;
+  color: #f0f6fc !important;
   margin: 0;
 }
 
@@ -276,6 +294,7 @@ h3::after {
   display: flex;
   gap: 1rem;
   background: transparent;
+  transform: translateY(-20px);
 }
 
 .btn {
@@ -350,6 +369,20 @@ h3::after {
   background: transparent;
   color: var(--text-secondary);
   font-size: 0.75rem;
+}
+
+.header .btn.btn-outline {
+  color: #f0f6fc;
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.header .btn.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.header .stat-group {
+  transform: translateY(10px);
 }
 
 /* Datapath Highlighting */
@@ -531,6 +564,11 @@ h3::after {
   display: flex;
   flex-direction: row;
   gap: 0.5rem;
+}
+
+.theme-label {
+  color: #f0f6fc;
+  font-weight: 500;
 }
 
 .arrow-inactive-marker {
