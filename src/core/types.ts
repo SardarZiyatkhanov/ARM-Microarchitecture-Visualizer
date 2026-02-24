@@ -7,7 +7,12 @@ export interface Instruction {
     raw: string;
     opcode: Opcode;
     operands: string[];
+    /** 32-character string of '0'/'1' bits, e.g. "11100011101000000000000000001010" */
     binary?: string;
+    /** 8-character uppercase hex, e.g. "E3A0000A" */
+    machineCode?: string;
+    /** Byte address of this instruction in the virtual program (0, 4, 8, ...) */
+    address?: number;
     line: number;
 }
 

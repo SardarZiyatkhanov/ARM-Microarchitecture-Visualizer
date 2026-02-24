@@ -751,3 +751,156 @@ h3::after {
 .arrow-active-marker {
   fill: var(--accent-color);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Machine Code View Styles
+───────────────────────────────────────────────────────────────────────────── */
+
+.mc-panel {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1.25rem;
+}
+
+.mc-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.mc-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.btn-toggle {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.7rem;
+  height: 28px;
+  border-radius: 4px;
+}
+
+.btn-toggle.active {
+  background: rgba(47, 129, 247, 0.15);
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+.mc-legend {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.7rem;
+  font-family: var(--font-sans);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.legend-item::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.legend-item.bit-cond::before { background: rgba(248, 81, 73, 0.3); border: 1px solid #f85149; }
+.legend-item.bit-op::before   { background: rgba(210, 153, 34, 0.3); border: 1px solid #d29922; }
+.legend-item.bit-reg::before  { background: rgba(47, 129, 247, 0.3); border: 1px solid #2f81f7; }
+.legend-item.bit-imm::before  { background: rgba(63, 185, 80, 0.3); border: 1px solid #3fb950; }
+
+.machine-code-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  text-align: left;
+  background: #080808;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.machine-code-table th,
+.machine-code-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.machine-code-table th {
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: var(--font-sans);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.machine-code-table th span {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  opacity: 0.6;
+  text-transform: none;
+}
+
+.machine-code-table td {
+  white-space: nowrap;
+}
+
+.mc-addr { color: var(--text-secondary); }
+.mc-hex  { color: #e6edf3; font-weight: 600; letter-spacing: 1px; }
+.mc-asm  { color: #e6edf3; }
+
+/* Bit field coloring */
+.mc-bits {
+  letter-spacing: 2px;
+  font-size: 0.75rem;
+}
+
+.bit-cond { color: #f85149; }
+.bit-op   { color: #d29922; }
+.bit-reg  { color: #2f81f7; }
+.bit-imm  { color: #3fb950; }
+
+/* Stage Highlighting */
+.mc-row-fetch {
+  background: rgba(47, 129, 247, 0.1);
+  box-shadow: inset 2px 0 0 #2f81f7;
+}
+
+.mc-row-decode {
+  background: rgba(210, 153, 34, 0.08);
+  box-shadow: inset 2px 0 0 #d29922;
+}
+
+.mc-row-execute {
+  background: rgba(63, 185, 80, 0.08);
+  box-shadow: inset 2px 0 0 #3fb950;
+}
+
+.stage-badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stage-badge.fetch  { background: rgba(47, 129, 247, 0.15); color: #2f81f7; border: 1px solid rgba(47, 129, 247, 0.3); }
+.stage-badge.decode { background: rgba(210, 153, 34, 0.15); color: #d29922; border: 1px solid rgba(210, 153, 34, 0.3); }
+.stage-badge.exec   { background: rgba(63, 185, 80, 0.15); color: #3fb950; border: 1px solid rgba(63, 185, 80, 0.3); }
+

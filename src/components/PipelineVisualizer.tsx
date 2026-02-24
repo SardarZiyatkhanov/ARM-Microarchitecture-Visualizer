@@ -227,6 +227,7 @@ export const PipelineVisualizer = () => {
                         onLoad={handleLoad}
                         parsed={parsedInst}
                         errors={assemblyErrors}
+                        currentPc={pc}
                     />
 
                     {toastMsg && (
