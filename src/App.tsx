@@ -28,7 +28,7 @@ const App: React.FC = () => {
     }
 
     return (
-        <div className="app-container" style={{ background: '#0f172a', minHeight: '100vh' }}>
+        <div className="app-container" style={{ minHeight: '100vh' }}>
             <main>
                 {/* Шапку из App.tsx мы удалили, чтобы не дублировать ту, что уже есть в самом симуляторе */}
                 <PipelineVisualizer />

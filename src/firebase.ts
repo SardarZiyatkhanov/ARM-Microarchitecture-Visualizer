@@ -1,24 +1,26 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 // Ваша конфигурация Firebase
 const firebaseConfig = {
-    apiKey: "AIzaSyB11VKKNxt9nkCfjAhB46GIvoy9C_KQNFg",
-    authDomain: "playarm-project.firebaseapp.com",
-    projectId: "playarm-project",
-    storageBucket: "playarm-project.firebasestorage.app",
-    messagingSenderId: "894259892273",
-    appId: "1:894259892273:web:50d91a1c7869f1cefa0510",
-    measurementId: "G-2JG9NWEG9F"
+    apiKey: "AIzaSyC9_1X0pWeuRxLZ6eC3zbQP__xK-xsyq90",
+    authDomain: "playarm.firebaseapp.com",
+    projectId: "playarm",
+    storageBucket: "playarm.firebasestorage.app",
+    messagingSenderId: "966877398444",
+    appId: "1:966877398444:web:79ccffa900851b7143e609",
+    measurementId: "G-PCVP1HVPEH"
 };
 
 // Инициализация самого приложения Firebase
 const app = initializeApp(firebaseConfig);
 
-// Инициализация и экспорт базы данных (Firestore) и системы авторизации (Auth)
-export const db = getFirestore(app);
+// Инициализация базы данных с強制 Long Polling (исправляет блокировки WebSocket в универах/корпоративных сетях)
+export const db = initializeFirestore(app, {
+    experimentalForceLongPolling: true
+});
+
 export const auth = getAuth(app);
 
-// 👇 ВОТ ЭТА СТРОКА ИСПРАВИТ ОШИБКУ БЕЛОГО ЭКРАНА 👇
 export const isFirebaseInitialized = !!firebaseConfig.apiKey;

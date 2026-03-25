@@ -24,28 +24,201 @@
   --font-mono: 'JetBrains Mono', monospace;
 }
 
-/* Light Theme */
+/* ─── Premium Light Theme ─────────────────────────────────────────────────── */
 :root[data-theme="light"] {
-  --bg-color: #f5f7fb;
-  --bg-glow-1: rgba(37, 99, 235, 0.10);
-  --bg-glow-2: rgba(37, 99, 235, 0.04);
+  /* Background — warm slate gradient, not plain white */
+  --bg-color: #eef1f8;
+  --bg-glow-1: rgba(99, 102, 241, 0.12);
+  --bg-glow-2: rgba(14, 165, 233, 0.07);
+
+  /* Panels — layered white cards with visible depth */
   --panel-bg: #ffffff;
-  --glass-bg: rgba(255, 255, 255, 0.75);
-  --viz-bg: #ffffff;
-  --viz-block: #f1f5f9;
-  --viz-line: rgba(15, 23, 42, 0.25);
-  --viz-stage-inactive: #e5e7eb;
-  --viz-stroke: #cbd5e1;
-  --border-color: rgba(15, 23, 42, 0.14);
+  --glass-bg: rgba(255, 255, 255, 0.88);
+
+  /* Canvas */
+  --viz-bg: #f8fafc;
+  --viz-block: #e8edf5;
+  --viz-line: rgba(51, 65, 85, 0.30);
+  --viz-stage-inactive: #dde3ef;
+  --viz-stroke: #94a3b8;
+
+  /* Borders — subtle indigo tint */
+  --border-color: rgba(99, 102, 241, 0.14);
+
+  /* Typography */
   --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --accent-color: #2563eb;
-  --accent-glow: rgba(37, 99, 235, 0.25);
-  --success-color: #16a34a;
-  --warning-color: #ca8a04;
-  --danger-color: #dc2626;
+  --text-secondary: #4b5680;
+
+  /* Accent — rich indigo */
+  --accent-color: #4f46e5;
+  --accent-glow: rgba(79, 70, 229, 0.22);
+
+  /* Semantic */
+  --success-color: #059669;
+  --warning-color: #d97706;
+  --danger-color: #e11d48;
+
+  /* Light-specific extras */
+  --panel-shadow: 0 1px 3px rgba(15,23,42,0.07), 0 8px 24px rgba(15,23,42,0.06);
+  --panel-shadow-hover: 0 4px 6px rgba(15,23,42,0.06), 0 16px 32px rgba(15,23,42,0.10);
+  --header-bg: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e3a5f 100%);
+  --header-text: #f1f5f9;
+  --header-border: rgba(255,255,255,0.10);
 }
 
+/* ─── Light-theme specific overrides ──────────────────────────────────────── */
+
+/* Body background: rich cool-slate gradient */
+:root[data-theme="light"] body {
+  background: linear-gradient(160deg, #e8ecf5 0%, #eef1f8 40%, #e5eaf5 100%);
+  background-attachment: fixed;
+}
+
+/* Panels get real depth */
+:root[data-theme="light"] .panel {
+  box-shadow: var(--panel-shadow);
+  border-color: rgba(99, 102, 241, 0.10);
+  background: #ffffff;
+  transition: box-shadow 0.25s, border-color 0.25s;
+}
+
+:root[data-theme="light"] .panel:hover {
+  box-shadow: var(--panel-shadow-hover);
+  border-color: rgba(79, 70, 229, 0.18);
+}
+
+/* Header: dark indigo gradient — always professional regardless of theme */
+:root[data-theme="light"] .header {
+  background: var(--header-bg);
+  border-radius: 14px;
+  padding: 0.85rem 1.5rem !important;
+  border: 1px solid var(--header-border);
+  box-shadow: 0 4px 24px rgba(30, 27, 75, 0.25);
+}
+
+:root[data-theme="light"] .header h1 {
+  -webkit-text-fill-color: #f1f5f9 !important;
+  color: #f1f5f9 !important;
+}
+
+:root[data-theme="light"] .header .stat {
+  color: rgba(241,245,249,0.7);
+}
+
+:root[data-theme="light"] .header .stat strong {
+  color: #a5b4fc;
+}
+
+:root[data-theme="light"] .header .btn.btn-outline {
+  color: #e0e7ff;
+  border-color: rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.08);
+}
+
+:root[data-theme="light"] .header .btn.btn-outline:hover {
+  background: rgba(255,255,255,0.16);
+  border-color: rgba(255,255,255,0.3);
+}
+
+:root[data-theme="light"] .header .btn-reset {
+  background: rgba(225, 29, 72, 0.15);
+  border-color: rgba(225, 29, 72, 0.35);
+  color: #fb7185;
+}
+
+:root[data-theme="light"] .header .btn-step {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.35);
+  color: #a5b4fc;
+}
+
+:root[data-theme="light"] .header .btn-play {
+  background: rgba(5, 150, 105, 0.15);
+  border-color: rgba(5, 150, 105, 0.35);
+  color: #6ee7b7;
+}
+
+/* Theme toggle inside the dark header */
+:root[data-theme="light"] .theme-label {
+  color: rgba(241,245,249,0.75);
+}
+
+:root[data-theme="light"] .theme-toggle .btn-outline {
+  color: rgba(241,245,249,0.65);
+  border-color: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+}
+
+:root[data-theme="light"] .theme-toggle .btn-outline.theme-active {
+  background: #4f46e5;
+  border-color: #6366f1;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(79,70,229,0.4);
+}
+
+/* Registers: subtle card style */
+:root[data-theme="light"] .reg-item {
+  background: #f1f5fd;
+  border: 1px solid rgba(99,102,241,0.12);
+}
+
+:root[data-theme="light"] .reg-item:hover {
+  border-color: rgba(79,70,229,0.3);
+  background: #eef0fd;
+}
+
+/* Flags */
+:root[data-theme="light"] .flag {
+  background: #f1f5fd;
+  border-color: rgba(99,102,241,0.15);
+  color: #64748b;
+}
+
+/* Stage cards */
+:root[data-theme="light"] .stage-card {
+  background: #f8faff;
+  border-color: rgba(99,102,241,0.12);
+}
+
+:root[data-theme="light"] .stage-card.active {
+  background: rgba(79,70,229,0.06);
+  border-color: #6366f1;
+  box-shadow: 0 4px 16px rgba(79,70,229,0.12);
+}
+
+/* Signal tags */
+:root[data-theme="light"] .signal-tag {
+  background: #f8faff;
+  border-color: rgba(99,102,241,0.12);
+  color: #4b5680;
+}
+
+:root[data-theme="light"] .signal-tag.active {
+  background: rgba(79,70,229,0.08);
+  border-color: #6366f1;
+  color: #4f46e5;
+  box-shadow: 0 0 10px rgba(79,70,229,0.15);
+}
+
+/* Code editor */
+:root[data-theme="light"] .code-editor {
+  background: #f8faff;
+  border-color: rgba(99,102,241,0.15);
+  color: #1e293b;
+}
+
+:root[data-theme="light"] .code-editor:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(79,70,229,0.12);
+}
+
+/* Memory items */
+:root[data-theme="light"] .mem-item {
+  background: #f1f5fd;
+  border: 1px solid rgba(99,102,241,0.10);
+}
+
+/* ─── Theme toggle button states ───────────────────────────────── */
 :root[data-theme="dark"] .btn-outline.theme-active {
   border-color: var(--accent-color);
   color: #ffffff;

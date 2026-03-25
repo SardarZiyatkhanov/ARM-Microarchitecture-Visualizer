@@ -1,4 +1,4 @@
-import { db, isFirebaseInitialized } from '../firebase';
+import { db, auth, isFirebaseInitialized } from '../firebase';
 import {
     collection,
     addDoc,
@@ -10,8 +10,17 @@ import {
     serverTimestamp,
     Timestamp,
     updateDoc,
-    deleteDoc
+    deleteDoc,
+    where
 } from 'firebase/firestore';
+
+// Helper to prevent infinite hangs if offline or blocked
+const withTimeout = <T>(promise: Promise<T>, ms: number = 15000): Promise<T> => {
+    return Promise.race([
+        promise,
+        new Promise<T>((_, reject) => setTimeout(() => reject(new Error('Firebase request timed out')), ms))
+    ]);
+};
 
 // Types
 export interface Program {
@@ -75,13 +84,16 @@ export const saveProgram = async ({ title, assemblyText }: { title: string; asse
         return newProgram.id;
     }
 
+    const userId = auth?.currentUser?.uid;
+
     try {
-        const docRef = await addDoc(collection(db, PROGRAMS_COLLECTION), {
+        const docRef = await withTimeout(addDoc(collection(db, PROGRAMS_COLLECTION), {
             title,
             assemblyText,
+            userId: userId || null, // Attach the user making the request
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
-        });
+        }));
         return docRef.id;
     } catch (error) {
         console.error("Error saving program:", error);
@@ -96,15 +108,36 @@ export const listPrograms = async (): Promise<Program[]> => {
         );
     }
 
+    const userId = auth?.currentUser?.uid;
+
     try {
-        const q = query(collection(db, PROGRAMS_COLLECTION), orderBy('updatedAt', 'desc'));
-        const querySnapshot = await getDocs(q);
+        // Only fetch programs matching the current user, or all if no strict rules applied
+        let q;
+        if (userId) {
+            q = query(collection(db, PROGRAMS_COLLECTION), where("userId", "==", userId), orderBy('updatedAt', 'desc'));
+        } else {
+            q = query(collection(db, PROGRAMS_COLLECTION), orderBy('updatedAt', 'desc'));
+        }
+
+        const querySnapshot = await withTimeout(getDocs(q));
         return querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         } as Program));
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error listing programs:", error);
+        
+        // If the composite index is missing, fallback to fetching all and filtering locally, 
+        // to prevent the app from breaking for the user
+        if (error?.message?.includes("index")) {
+            console.warn("Missing Firestore index! Falling back to client-side filtering.");
+            const fallbackQ = query(collection(db, PROGRAMS_COLLECTION), orderBy('updatedAt', 'desc'));
+            const snapshot = await withTimeout(getDocs(fallbackQ));
+            return snapshot.docs
+                .map(d => ({ id: d.id, ...d.data() } as Program))
+                .filter(p => (p as any).userId === userId);
+        }
+        
         throw error;
     }
 };
@@ -117,7 +150,7 @@ export const getProgram = async (programId: string): Promise<Program | null> => 
 
     try {
         const docRef = doc(db, PROGRAMS_COLLECTION, programId);
-        const docSnap = await getDoc(docRef);
+        const docSnap = await withTimeout(getDoc(docRef));
         if (docSnap.exists()) {
             return { id: docSnap.id, ...docSnap.data() } as Program;
         }
@@ -146,11 +179,11 @@ export const updateProgram = async (programId: string, { title, assemblyText }: 
 
     try {
         const docRef = doc(db, PROGRAMS_COLLECTION, programId);
-        await updateDoc(docRef, {
+        await withTimeout(updateDoc(docRef, {
             ...(title && { title }),
             ...(assemblyText && { assemblyText }),
             updatedAt: serverTimestamp()
-        });
+        }));
     } catch (error) {
         console.error("Error updating program:", error);
         throw error;
@@ -166,7 +199,7 @@ export const deleteProgram = async (programId: string): Promise<void> => {
     }
 
     try {
-        await deleteDoc(doc(db, PROGRAMS_COLLECTION, programId));
+        await withTimeout(deleteDoc(doc(db, PROGRAMS_COLLECTION, programId)));
     } catch (error) {
         console.error("Error deleting program:", error);
         throw error;

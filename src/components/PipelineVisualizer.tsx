@@ -1,14 +1,16 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { parseAssembly } from '../core/assembler'
 import { VisualizerCanvas } from './VisualizerCanvas'
 import { InstructionInput } from './InstructionInput'
-import { ControlPanel } from './ControlPanel'
 import { INITIAL_REGISTERS, INITIAL_PIPELINE_STATE, INITIAL_FLAGS, CpuState } from '../core/types';
 import { advancePipeline } from '../core/pipeline';
 import { isFirebaseInitialized } from '../firebase';
 import { saveProgram, listPrograms, Program, deleteProgram, updateProgram } from '../services/firestoreService';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
+import { createEmptyTLB, translateAddress, TLBState, MemoryAccessResult } from '../core/memory';
+import { TLBVisualizer } from './TLBVisualizer';
+import ThemeToggle from './ThemeToggle';
 
 export const PipelineVisualizer = () => {
     const [programTitle, setProgramTitle] = useState('ARM Simulator Demo');
@@ -24,6 +26,16 @@ export const PipelineVisualizer = () => {
     const [memory, setMemory] = useState<Record<number, number>>({});
     const [flags, setFlags] = useState(INITIAL_FLAGS);
     const [pipeline, setPipeline] = useState(INITIAL_PIPELINE_STATE);
+    const [tlbState, setTlbState] = useState<TLBState>(createEmptyTLB());
+    const [lastAccess, setLastAccess] = useState<MemoryAccessResult | null>(null);
+    const tlbRef = useRef<TLBState>(createEmptyTLB());
+
+    const [toastMsg, setToastMsg] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+
+    const showToast = (text: string, type: 'success' | 'error') => {
+        setToastMsg({ text, type });
+        setTimeout(() => setToastMsg(null), 3000);
+    };
 
     const [showOfflineWarning, setShowOfflineWarning] = useState(!isFirebaseInitialized);
 
@@ -44,6 +56,24 @@ export const PipelineVisualizer = () => {
         };
 
         const nextState = advancePipeline(currentCpuState, parsedInst);
+
+        // ── TLB: translate address when Memory stage has LDR/STR ──────────────
+        const memStage = currentCpuState.pipeline.Memory;
+        if (memStage.instruction &&
+            (memStage.instruction.opcode === 'LDR' || memStage.instruction.opcode === 'STR') &&
+            memStage.memoryAddress !== undefined) {
+            const isWrite = memStage.instruction.opcode === 'STR';
+            const { newTlbState, result } = translateAddress(
+                memStage.memoryAddress,
+                isWrite,
+                currentCpuState.clock,
+                tlbRef.current
+            );
+            tlbRef.current = newTlbState;
+            setTlbState(newTlbState);
+            setLastAccess(result);
+        }
+        // ─────────────────────────────────────────────────────────────────────
 
         setCycle(nextState.clock);
         setPc(nextState.pc);
@@ -68,25 +98,34 @@ export const PipelineVisualizer = () => {
         setMemory({});
         setFlags(INITIAL_FLAGS);
         setPipeline(INITIAL_PIPELINE_STATE);
+        const freshTlb = createEmptyTLB();
+        tlbRef.current = freshTlb;
+        setTlbState(freshTlb);
+        setLastAccess(null);
         setIsPlaying(false);
     };
 
     const handleSave = async () => {
+        console.log('SAVE BUTTON CLICKED. Starting save workflow...');
+        setToastMsg({ text: 'Saving to cloud...', type: 'success' }); // Show immediate feedback
+
         try {
             if (currentProgramId) {
                 await updateProgram(currentProgramId, { title: programTitle, assemblyText: instruction });
-                alert('Program updated successfully!');
+                showToast('Program updated successfully!', 'success');
             } else {
                 const id = await saveProgram({ title: programTitle, assemblyText: instruction });
                 setCurrentProgramId(id);
-                alert('Program saved successfully!');
+                showToast('Program saved successfully!', 'success');
             }
             // Refresh the list automatically
             const programs = await listPrograms();
             setSavedPrograms(programs);
             setShowLoadList(true);
         } catch (error) {
-            alert('Failed to save program.');
+            console.error('Save failed:', error);
+            const errMsg = error instanceof Error ? error.message : String(error);
+            showToast(`Error: ${errMsg}`, 'error');
         }
     };
 
@@ -96,7 +135,8 @@ export const PipelineVisualizer = () => {
             setSavedPrograms(programs);
             setShowLoadList(!showLoadList);
         } catch (error) {
-            alert('Failed to load programs.');
+            console.error('Load failed:', error);
+            showToast('Failed to load programs.', 'error');
         }
     };
 
@@ -110,8 +150,10 @@ export const PipelineVisualizer = () => {
             if (currentProgramId === id) {
                 setCurrentProgramId(null);
             }
+            showToast('Program deleted.', 'success');
         } catch (error) {
-            alert('Failed to delete program.');
+            console.error('Delete failed:', error);
+            showToast('Failed to delete program.', 'error');
         }
     };
 
@@ -139,16 +181,31 @@ export const PipelineVisualizer = () => {
         <div className="app-container">
             <header className="header">
                 <h1>PlayARM</h1>
-                <div className="stat-group">
+                <div className="stat-group" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <div className="stat">Cycle: <strong>{cycle}</strong></div>
+                    <div className="stat">PC: <strong>0x{pc.toString(16).toUpperCase().padStart(4, '0')}</strong></div>
+
+                    <div style={{ width: '1px', height: '22px', background: 'var(--border-color)', margin: '0 0.25rem' }} />
+
+                    <button className="btn btn-reset" onClick={handleReset}>↺ Reset</button>
+                    <button className="btn btn-step" onClick={handleStep} disabled={isPlaying}>↷ Step</button>
+                    <button className="btn btn-play" onClick={handlePlay}>
+                        {isPlaying ? '⏸ Pause' : '▶ Play'}
+                    </button>
+
+                    <div style={{ width: '1px', height: '22px', background: 'var(--border-color)', margin: '0 0.25rem' }} />
+
+                    <ThemeToggle />
+
+                    <div style={{ width: '1px', height: '22px', background: 'var(--border-color)', margin: '0 0.25rem' }} />
+
                     <button
                         className="btn btn-outline"
                         onClick={() => auth && signOut(auth)}
-                        style={{ marginRight: '1rem', fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
+                        style={{ fontSize: '0.8rem', padding: '0.25rem 0.6rem' }}
                     >
                         Sign Out
                     </button>
-                    <div className="stat">Cycle: <strong>{cycle}</strong></div>
-                    <div className="stat">PC: <strong>0x{pc.toString(16).toUpperCase().padStart(4, '0')}</strong></div>
                 </div>
             </header>
 
@@ -171,6 +228,24 @@ export const PipelineVisualizer = () => {
                         parsed={parsedInst}
                         errors={assemblyErrors}
                     />
+
+                    {toastMsg && (
+                        <div style={{
+                            padding: '0.75rem 1rem',
+                            borderRadius: '8px',
+                            background: toastMsg.type === 'success' ? 'var(--success-color)' : 'var(--danger-color)',
+                            color: '#fff',
+                            fontSize: '0.85rem',
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                            animation: 'fadeIn 0.2s ease-out'
+                        }}>
+                            {toastMsg.type === 'success' ? '✅' : '❌'} {toastMsg.text}
+                        </div>
+                    )}
 
                     {showLoadList && (
                         <section className="panel" style={{ maxHeight: '300px', overflowY: 'auto' }}>
@@ -268,6 +343,9 @@ export const PipelineVisualizer = () => {
                             })}
                         </div>
                     </div>
+
+                    {/* ── TLB & Virtual Memory Panel ── */}
+                    <TLBVisualizer tlbState={tlbState} lastAccess={lastAccess} />
                 </section>
 
                 <section className="panel status-panel">
@@ -306,12 +384,7 @@ export const PipelineVisualizer = () => {
                         </div>
                     </div>
                 </section>
-                <ControlPanel
-                    onPlay={handlePlay}
-                    onStep={handleStep}
-                    onReset={handleReset}
-                    isPlaying={isPlaying}
-                />
+
             </main>
         </div>
     );
