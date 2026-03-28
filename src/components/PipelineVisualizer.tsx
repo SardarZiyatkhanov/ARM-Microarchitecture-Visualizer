@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
+import { User } from 'firebase/auth';
 import { parseAssembly } from '../core/assembler'
 import { VisualizerCanvas } from './VisualizerCanvas'
 import { InstructionInput } from './InstructionInput'
@@ -12,13 +14,26 @@ import { createEmptyTLB, translateAddress, TLBState, MemoryAccessResult } from '
 import { TLBVisualizer } from './TLBVisualizer';
 import ThemeToggle from './ThemeToggle';
 
-export const PipelineVisualizer = () => {
+const SPEED_OPTIONS = [
+    { label: 'Slow', ms: 1400 },
+    { label: 'Normal', ms: 800 },
+    { label: 'Fast', ms: 250 },
+];
+
+interface PipelineVisualizerProps {
+    user?: User | null;
+}
+
+export const PipelineVisualizer = ({ user }: PipelineVisualizerProps) => {
     const [programTitle, setProgramTitle] = useState('ARM Simulator Demo');
     const [instruction, setInstruction] = useState('MOV R0, #10\nMOV R1, #0\nLOOP:\nADD R1, R1, #1\nCMP R1, R0\nBNE LOOP\nSTR R1, [R2]')
     const [isPlaying, setIsPlaying] = useState(false)
     const [showLoadList, setShowLoadList] = useState(false);
     const [savedPrograms, setSavedPrograms] = useState<Program[]>([]);
     const [currentProgramId, setCurrentProgramId] = useState<string | null>(null);
+    const [speed, setSpeed] = useState(800);
+    const [displayFormat, setDisplayFormat] = useState<'hex' | 'decimal'>('hex');
+    const [isDone, setIsDone] = useState(false);
 
     const [cycle, setCycle] = useState(0);
     const [pc, setPc] = useState(0);
@@ -31,6 +46,9 @@ export const PipelineVisualizer = () => {
     const tlbRef = useRef<TLBState>(createEmptyTLB());
 
     const [toastMsg, setToastMsg] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+    const [showUserMenu, setShowUserMenu] = useState(false);
+    const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
+    const userMenuBtnRef = useRef<HTMLButtonElement>(null);
 
     const showToast = (text: string, type: 'success' | 'error') => {
         setToastMsg({ text, type });
@@ -44,7 +62,7 @@ export const PipelineVisualizer = () => {
     const assemblyErrors = assemblyResult.errors;
 
     const performStep = () => {
-        if (assemblyErrors.length > 0) return; // Don't run if there are errors
+        if (assemblyErrors.length > 0) return;
 
         const currentCpuState: CpuState = {
             clock: cycle,
@@ -75,6 +93,17 @@ export const PipelineVisualizer = () => {
         }
         // ─────────────────────────────────────────────────────────────────────
 
+        // Completion detection: all stages idle after at least one cycle
+        const allIdle = !nextState.pipeline.Fetch.instruction &&
+            !nextState.pipeline.Decode.instruction &&
+            !nextState.pipeline.Execute.instruction &&
+            !nextState.pipeline.Memory.instruction &&
+            !nextState.pipeline.WriteBack.instruction;
+        if (allIdle && nextState.clock > 0) {
+            setIsPlaying(false);
+            setIsDone(true);
+        }
+
         setCycle(nextState.clock);
         setPc(nextState.pc);
         setRegisters(nextState.registers);
@@ -83,11 +112,17 @@ export const PipelineVisualizer = () => {
         setPipeline(nextState.pipeline);
     };
 
+    // Keep a ref to the latest performStep to avoid stale closures in the interval
+    const performStepRef = useRef(performStep);
+    performStepRef.current = performStep;
+
     const handlePlay = () => {
-        setIsPlaying(!isPlaying);
+        if (isDone) return;
+        setIsPlaying(prev => !prev);
     };
 
     const handleStep = () => {
+        if (isDone) return;
         performStep();
     };
 
@@ -103,11 +138,11 @@ export const PipelineVisualizer = () => {
         setTlbState(freshTlb);
         setLastAccess(null);
         setIsPlaying(false);
+        setIsDone(false);
     };
 
     const handleSave = async () => {
-        console.log('SAVE BUTTON CLICKED. Starting save workflow...');
-        setToastMsg({ text: 'Saving to cloud...', type: 'success' }); // Show immediate feedback
+        setToastMsg({ text: 'Saving to cloud...', type: 'success' });
 
         try {
             if (currentProgramId) {
@@ -118,12 +153,10 @@ export const PipelineVisualizer = () => {
                 setCurrentProgramId(id);
                 showToast('Program saved successfully!', 'success');
             }
-            // Refresh the list automatically
             const programs = await listPrograms();
             setSavedPrograms(programs);
             setShowLoadList(true);
         } catch (error) {
-            console.error('Save failed:', error);
             const errMsg = error instanceof Error ? error.message : String(error);
             showToast(`Error: ${errMsg}`, 'error');
         }
@@ -165,17 +198,53 @@ export const PipelineVisualizer = () => {
         handleReset();
     };
 
-    // Auto-step when playing
+    // Auto-step: uses ref so interval always calls the latest performStep
     useEffect(() => {
         if (isPlaying) {
-            const interval = setInterval(() => {
-                performStep();
-            }, 800);
+            const interval = setInterval(() => performStepRef.current(), speed);
             return () => clearInterval(interval);
         }
-    }, [isPlaying]);
+    }, [isPlaying, speed]);
+
+    // Close user menu when clicking outside
+    useEffect(() => {
+        if (!showUserMenu) return;
+        const handler = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (!target.closest('.user-menu-root')) setShowUserMenu(false);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [showUserMenu]);
+
+    // Keyboard shortcuts: Space = play/pause, ArrowRight = step
+    useEffect(() => {
+        const onKeyDown = (e: KeyboardEvent) => {
+            const tag = (e.target as HTMLElement).tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+            if (e.code === 'Space') {
+                e.preventDefault();
+                handlePlay();
+            } else if (e.code === 'ArrowRight') {
+                e.preventDefault();
+                performStepRef.current();
+            }
+        };
+        document.addEventListener('keydown', onKeyDown);
+        return () => document.removeEventListener('keydown', onKeyDown);
+    }, [isDone]);
 
     const currentSignals = pipeline.Decode.controlSignals;
+
+    const formatVal = (val: number) =>
+        displayFormat === 'hex'
+            ? '0x' + val.toString(16).toUpperCase().padStart(8, '0')
+            : String(val);
+
+    const formatMemVal = (val: number) =>
+        displayFormat === 'hex'
+            ? '0x' + val.toString(16).toUpperCase().padStart(4, '0')
+            : String(val);
 
     return (
         <div className="app-container">
@@ -188,10 +257,26 @@ export const PipelineVisualizer = () => {
                     <div style={{ width: '1px', height: '22px', background: 'var(--border-color)', margin: '0 0.25rem' }} />
 
                     <button className="btn btn-reset" onClick={handleReset}>↺ Reset</button>
-                    <button className="btn btn-step" onClick={handleStep} disabled={isPlaying}>↷ Step</button>
-                    <button className="btn btn-play" onClick={handlePlay}>
+                    <button className="btn btn-step" onClick={handleStep} disabled={isPlaying || isDone}>↷ Step</button>
+                    <button className="btn btn-play" onClick={handlePlay} disabled={isDone}>
                         {isPlaying ? '⏸ Pause' : '▶ Play'}
                     </button>
+
+                    <div style={{ width: '1px', height: '22px', background: 'var(--border-color)', margin: '0 0.25rem' }} />
+
+                    {/* Speed control */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        {SPEED_OPTIONS.map(opt => (
+                            <button
+                                key={opt.label}
+                                className={`btn btn-toggle ${speed === opt.ms ? 'active' : ''}`}
+                                onClick={() => setSpeed(opt.ms)}
+                                style={{ height: '32px', fontSize: '0.7rem', padding: '0 0.6rem' }}
+                            >
+                                {opt.label}
+                            </button>
+                        ))}
+                    </div>
 
                     <div style={{ width: '1px', height: '22px', background: 'var(--border-color)', margin: '0 0.25rem' }} />
 
@@ -199,13 +284,59 @@ export const PipelineVisualizer = () => {
 
                     <div style={{ width: '1px', height: '22px', background: 'var(--border-color)', margin: '0 0.25rem' }} />
 
-                    <button
-                        className="btn btn-outline"
-                        onClick={() => auth && signOut(auth)}
-                        style={{ fontSize: '0.8rem', padding: '0.25rem 0.6rem' }}
-                    >
-                        Sign Out
-                    </button>
+                    {/* ── User avatar + dropdown ── */}
+                    <div className="user-menu-root" style={{ position: 'relative' }}>
+                        <button
+                            ref={userMenuBtnRef}
+                            onClick={() => {
+                                if (userMenuBtnRef.current) {
+                                    const r = userMenuBtnRef.current.getBoundingClientRect();
+                                    setMenuPos({ top: r.bottom + 8, right: window.innerWidth - r.right });
+                                }
+                                setShowUserMenu(v => !v);
+                            }}
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '0.3rem 0.6rem', cursor: 'pointer', color: '#f0f6fc' }}
+                        >
+                            {user?.photoURL ? (
+                                <img src={user.photoURL} alt="avatar" style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
+                            ) : (
+                                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: '#fff' }}>
+                                    {user?.isAnonymous ? '?' : (user?.displayName?.[0] ?? user?.email?.[0] ?? '?').toUpperCase()}
+                                </div>
+                            )}
+                            <span style={{ fontSize: '0.8rem', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {user?.isAnonymous ? 'Guest' : (user?.displayName ?? user?.email ?? 'User')}
+                            </span>
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" style={{ opacity: 0.6 }}>
+                                <path d="M6 8L1 3h10z"/>
+                            </svg>
+                        </button>
+
+                        {showUserMenu && createPortal(
+                            <div className="user-menu-root" style={{ position: 'fixed', top: menuPos.top, right: menuPos.right, background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', minWidth: '200px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)', zIndex: 9999, overflow: 'hidden' }}>
+                                <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                                    {user?.isAnonymous ? (
+                                        <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Signed in as Guest</p>
+                                    ) : (
+                                        <>
+                                            <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#f1f5f9' }}>{user?.displayName ?? 'User'}</p>
+                                            <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email}</p>
+                                        </>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={() => { setShowUserMenu(false); auth && signOut(auth); }}
+                                    style={{ width: '100%', padding: '0.65rem 1rem', background: 'none', border: 'none', color: '#f85149', fontSize: '13px', fontWeight: 600, textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                                    </svg>
+                                    Sign Out
+                                </button>
+                            </div>,
+                            document.body
+                        )}
+                    </div>
                 </div>
             </header>
 
@@ -213,6 +344,13 @@ export const PipelineVisualizer = () => {
                 <div className="offline-warning">
                     <span>⚠️ Offline Mode: Cloud persistence features are disabled.</span>
                     <button onClick={() => setShowOfflineWarning(false)}>×</button>
+                </div>
+            )}
+
+            {isDone && (
+                <div className="completion-banner">
+                    <span>✅ Program complete — all instructions retired after {cycle} cycles.</span>
+                    <button onClick={handleReset}>↺ Reset</button>
                 </div>
             )}
 
@@ -360,12 +498,26 @@ export const PipelineVisualizer = () => {
                     </div>
 
                     <div className="status-section">
-                        <h3>Registers</h3>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                            <h3 style={{ margin: 0 }}>Registers</h3>
+                            <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                <button
+                                    className={`btn btn-toggle ${displayFormat === 'hex' ? 'active' : ''}`}
+                                    onClick={() => setDisplayFormat('hex')}
+                                    style={{ height: '26px', fontSize: '0.65rem', padding: '0 0.5rem' }}
+                                >HEX</button>
+                                <button
+                                    className={`btn btn-toggle ${displayFormat === 'decimal' ? 'active' : ''}`}
+                                    onClick={() => setDisplayFormat('decimal')}
+                                    style={{ height: '26px', fontSize: '0.65rem', padding: '0 0.5rem' }}
+                                >DEC</button>
+                            </div>
+                        </div>
                         <div className="registers-grid">
                             {Object.entries(registers).map(([reg, val]) => (
                                 <div key={reg} className="reg-item">
                                     <span className="reg-label">{reg}</span>
-                                    <span className="reg-val">{val}</span>
+                                    <span className="reg-val">{formatVal(val)}</span>
                                 </div>
                             ))}
                         </div>
@@ -378,7 +530,7 @@ export const PipelineVisualizer = () => {
                                 Object.entries(memory).map(([addr, val]) => (
                                     <div key={addr} className="mem-item">
                                         <span className="mem-addr">0x{parseInt(addr).toString(16).toUpperCase().padStart(4, '0')}</span>
-                                        <span className="mem-val">{val}</span>
+                                        <span className="mem-val">{formatMemVal(val)}</span>
                                     </div>
                                 ))
                             }
