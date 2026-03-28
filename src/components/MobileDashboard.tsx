@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { MobileBottomNav } from './MobileBottomNav';
 import { InstructionInput } from './InstructionInput';
 import { PipelineVisualizer } from './PipelineVisualizer';
 import { TLBVisualizer } from './TLBVisualizer';
 import ThemeToggle from './ThemeToggle';
 import { createEmptyTLB } from '../core/memory';
+import { parseAssembly } from '../core/assembler';
 
 export default function MobileDashboard() {
     const [activeTab, setActiveTab] = useState('code');
@@ -12,6 +13,8 @@ export default function MobileDashboard() {
     // State for InstructionInput
     const [code, setCode] = useState('MOV R0, #10\nADD R1, R0, #5');
     const [title, setTitle] = useState('Untitled Program');
+
+    const assemblyResult = useMemo(() => parseAssembly(code), [code]);
 
     return (
         <div className="flex flex-col h-screen overflow-hidden" style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -24,8 +27,8 @@ export default function MobileDashboard() {
                         onChange={setCode}
                         title={title}
                         onTitleChange={setTitle}
-                        parsed={[]} // You can connect your real parser here later
-                        errors={[]}
+                        parsed={assemblyResult.instructions}
+                        errors={assemblyResult.errors}
                     />
                 )}
 

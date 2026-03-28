@@ -29,30 +29,7 @@ interface InstructionInputProps {
 // set supported by this simulator.
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface FieldDef {
-    label: string;
-    start: number; // inclusive, left-to-right index into the 32-char string
-    end: number;   // exclusive
-    cls: string;   // CSS class name
-}
 
-// Field definitions — indices into the 32-character binary string (MSB first)
-const FIELDS: FieldDef[] = [
-    { label: 'Cond', start: 0, end: 4, cls: 'bit-cond' }, // bits 31-28
-    { label: 'Op', start: 4, end: 12, cls: 'bit-op' }, // bits 27-20
-    { label: 'Regs', start: 12, end: 20, cls: 'bit-reg' }, // bits 19-12
-    { label: 'Imm', start: 20, end: 32, cls: 'bit-imm' }, // bits 11-0
-];
-
-/** Render a 32-char binary string with colored field spans */
-function renderBits(binary: string) {
-    return FIELDS.map((f, i) => (
-        <span key={i} className={`bit-group ${f.cls}`} title={f.label}>
-            {binary.slice(f.start, f.end)}
-            {i < FIELDS.length - 1 && <span className="bit-sep"> </span>}
-        </span>
-    ));
-}
 
 const MachineCodeTable: React.FC<{ parsed: Instruction[]; currentPc: number; viewMode: 'hex' | 'binary' }> = ({
     parsed, currentPc, viewMode

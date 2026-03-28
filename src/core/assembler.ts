@@ -132,8 +132,6 @@ function branch(cond: number, offset: number): number {
 }
 
 // ARM32 ALU opcode fields (bits 24-21)
-const ALU_AND = 0b0000;
-const ALU_EOR = 0b0001;
 const ALU_SUB = 0b0010;
 const ALU_ADD = 0b0100;
 const ALU_CMP = 0b1010;
