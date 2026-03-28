@@ -45,7 +45,7 @@ function App() {
         return <Auth />;
     }
 
-    return <PipelineVisualizer />;
+    return <PipelineVisualizer user={user} />;
 }
 
 export default App;
