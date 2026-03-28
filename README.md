@@ -32,7 +32,8 @@ Developed as a **Senior Design Project (SDP)** at **ADA University**, this tool 
 - **Modern Responsive Design**: Glassmorphism-inspired dark UI with smooth hover effects and micro-animations.
 
 ### ☁️ Cloud Features
-- **User Authentication**: Sign in / Sign up via Firebase Authentication.
+- **User Authentication**: Sign in / Sign up via Firebase Authentication (email/password, Google, or GitHub OAuth).
+- **Guest Mode**: Try the simulator instantly without creating an account via anonymous sign-in.
 - **Cloud Persistence**: Save ARM programs to Firebase Firestore and load them across sessions.
 - **Program Management**: Edit program titles, view last-modified timestamps, and delete saved programs.
 - **Offline Mode**: The app gracefully degrades if Firebase is not configured, showing an offline warning banner.
@@ -146,7 +147,7 @@ ARM-Microarchitecture-Visualizer/
    BNE #8
    STR R1, [R2]
    ```
-2. **Execute**: Press **Step** to advance one clock cycle, or **Play** for automatic stepping at 800 ms intervals.
+2. **Execute**: Press **Step** (or `→`) to advance one clock cycle, or **Play** (or `Space`) for automatic stepping. Use the **Slow / Normal / Fast** speed buttons to control playback interval.
 3. **Observe the Pipeline**: Watch the Fabric.js canvas animate each instruction through the 5 stages.
 4. **Check Control Signals**: The Decode stage signals panel updates on every cycle.
 
@@ -188,6 +189,48 @@ ARM-Microarchitecture-Visualizer/
 | Physical Frame Allocation | Sequential on first access |
 
 On a **TLB Miss**, the simulator walks the page table, allocates a new physical frame if the virtual page has never been accessed, and installs the translation into the TLB (evicting the LRU entry if all 16 slots are full).
+
+---
+
+## 📅 Changelog
+
+### March 2026
+
+#### Authentication & User Management
+- **Google & GitHub OAuth** — added one-click sign-in via Google and GitHub alongside existing email/password login
+- **Guest / Anonymous mode** — users can try the simulator without creating an account; progress is session-only
+- **Forgot Password** — sends a Firebase password-reset email from a dedicated view in the auth page
+- **Show/Hide Password toggle** — eye icon inside the password field for usability
+- **PlayARM branding** on the login card — gradient logo and subtitle instead of a plain title
+- **User avatar dropdown** in the header — shows profile photo (or generated initial), display name, email, and a Sign Out button; rendered via React Portal so it always appears on top regardless of layout stacking context
+
+#### Simulator Improvements
+- **Stale closure bug fix** — auto-play interval now uses a ref pattern so register and memory state always reflect the latest values during playback
+- **Playback speed control** — Slow (1400 ms) / Normal (800 ms) / Fast (250 ms) preset buttons in the header
+- **Hex / Decimal display toggle** — registers and memory viewer can be switched between hex (default) and decimal display
+- **Program completion detection** — simulation automatically stops and shows a green banner when all 5 pipeline stages go idle after at least one cycle
+- **Keyboard shortcuts** — `Space` to play/pause, `→` (ArrowRight) to step; ignored when focus is inside a text input
+
+#### Machine Code View
+- **Binary/Hex machine code table** — each parsed instruction shows its 32-bit ARM encoding split into color-coded bit fields (Cond, Op, Regs, Imm/Offset)
+- **Full 5-stage pipeline tracking** — all five stages (Fetch, Decode, Execute, Memory, WriteBack) are now highlighted in the machine code table with distinct color badges; previously only the first three stages were shown
+
+#### Light Theme Fixes
+- Pipeline canvas blocks, strokes, and connector lines darkened for clear visibility on light backgrounds
+- Machine code table: replaced hardcoded dark background and invisible row dividers with theme-aware CSS variables
+- Bit-field colors (Cond/Op/Regs/Imm) darkened to high-contrast variants in light mode
+- Stage badge column given `min-width` and `white-space: nowrap` to prevent text clipping
+- Pipeline activity cards: stronger background and border colors, darker stage name labels
+- Flags: solid visible border when unset, bright indigo glow when set
+- Registers: subdued grey label vs. bold indigo value for clear separation; single-column layout to prevent hex value overflow
+- Panel borders bumped to higher opacity for better separation
+- Memory viewer empty state styled with a dashed bordered box
+- Debug overlay on canvas uses a white semi-transparent background in light mode
+- Removed stray `console.log` calls from pipeline state debug block and save handler
+
+#### Monorepo Migration
+- Project restructured into a monorepo under `apps/web/` (web simulator) and `apps/mobile/` (React Native app, initialized)
+- Core simulation logic (`assembler`, `pipeline`, `types`) extracted to `@playarm/core` shared package
 
 ---
 
