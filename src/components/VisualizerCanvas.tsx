@@ -44,15 +44,6 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
         return () => observer.disconnect();
     }, []);
 
-    // Console logging
-    useEffect(() => {
-        console.log('=== PIPELINE STATE DEBUG ===');
-        console.log('Current Stage:', currentStage || 'None');
-        console.log('Current Instruction:', currentInstruction ? `${currentInstruction.opcode} (${currentInstruction.raw})` : 'None');
-        console.log('Control Signals:', controlSignals || 'None');
-        console.log('===========================');
-    }, [pipelineState]);
-
     useEffect(() => {
         if (!containerRef.current || !canvasRef.current) return;
 
@@ -368,13 +359,13 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
                     position: 'absolute',
                     bottom: '10px',
                     right: '10px',
-                    backgroundColor: 'color-mix(in srgb, var(--panel-bg) 92%, transparent)',
+                    backgroundColor: theme === 'light' ? 'rgba(255,255,255,0.92)' : 'rgba(15,17,21,0.92)',
                     backdropFilter: 'blur(4px)',
                     border: '1px solid var(--accent-color)',
                     borderRadius: '6px',
                     padding: '0.4rem 0.6rem',
                     minWidth: '150px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                    boxShadow: theme === 'light' ? '0 2px 8px rgba(15,23,42,0.12)' : '0 4px 12px rgba(0,0,0,0.5)',
                     zIndex: 10,
                     pointerEvents: 'none',
                     borderLeft: '4px solid var(--accent-color)'
