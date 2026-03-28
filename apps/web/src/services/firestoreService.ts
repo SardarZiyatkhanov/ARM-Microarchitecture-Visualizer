@@ -52,10 +52,10 @@ export interface Snapshot {
     id?: string;
     runId?: string;
     stepIndex: number;
-    pipeline: import('../core/types').PipelineState;
+    pipeline: import('@playarm/core').PipelineState;
     registers: Record<string, number>;
     memory: Record<number, number>;
-    flags: import('../core/types').Flags;
+    flags: import('@playarm/core').Flags;
     timestamp?: Timestamp | { seconds: number, nanoseconds: number };
 }
 

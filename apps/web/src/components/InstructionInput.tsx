@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Instruction, ParseError } from '../core/types';
+import { Instruction, ParseError } from '@playarm/core';
 
 interface InstructionInputProps {
     code: string;

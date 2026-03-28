@@ -1,9 +1,9 @@
 import React from 'react';
-import { TLBState, TLB_SIZE, PAGE_SIZE } from '../core/memory';
+import { TLBState, TLB_SIZE, PAGE_SIZE } from '@playarm/core';
 
 interface TLBVisualizerProps {
     tlbState: TLBState;
-    lastAccess: import('../core/memory').MemoryAccessResult | null;
+    lastAccess: import('@playarm/core').MemoryAccessResult | null;
 }
 
 const fmt = (n: number, pad = 4) =>

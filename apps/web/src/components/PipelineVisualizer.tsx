@@ -1,16 +1,16 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { User } from 'firebase/auth';
-import { parseAssembly } from '../core/assembler'
-import { VisualizerCanvas } from './VisualizerCanvas'
-import { InstructionInput } from './InstructionInput'
-import { INITIAL_REGISTERS, INITIAL_PIPELINE_STATE, INITIAL_FLAGS, CpuState } from '../core/types';
-import { advancePipeline } from '../core/pipeline';
+import { parseAssembly } from '@playarm/core';
+import { VisualizerCanvas } from './VisualizerCanvas';
+import { InstructionInput } from './InstructionInput';
+import { INITIAL_REGISTERS, INITIAL_PIPELINE_STATE, INITIAL_FLAGS, CpuState } from '@playarm/core';
+import { advancePipeline } from '@playarm/core';
 import { isFirebaseInitialized } from '../firebase';
 import { saveProgram, listPrograms, Program, deleteProgram, updateProgram } from '../services/firestoreService';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
-import { createEmptyTLB, translateAddress, TLBState, MemoryAccessResult } from '../core/memory';
+import { createEmptyTLB, translateAddress, TLBState, MemoryAccessResult } from '@playarm/core';
 import { TLBVisualizer } from './TLBVisualizer';
 import ThemeToggle from './ThemeToggle';
 

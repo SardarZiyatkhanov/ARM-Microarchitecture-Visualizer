@@ -1,0 +1,14 @@
+{
+  "name": "@playarm/core",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "vitest": "^4.1.2"
+  }
+}
