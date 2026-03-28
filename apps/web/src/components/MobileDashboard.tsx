@@ -4,8 +4,8 @@ import { InstructionInput } from './InstructionInput';
 import { PipelineVisualizer } from './PipelineVisualizer';
 import { TLBVisualizer } from './TLBVisualizer';
 import ThemeToggle from './ThemeToggle';
-import { createEmptyTLB } from '../core/memory';
-import { parseAssembly } from '../core/assembler';
+import { createEmptyTLB } from '@playarm/core';
+import { parseAssembly } from '@playarm/core';
 
 export default function MobileDashboard() {
     const [activeTab, setActiveTab] = useState('code');

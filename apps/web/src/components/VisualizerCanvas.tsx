@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { fabric } from 'fabric';
-import { PipelineState, CpuState } from '../core/types';
+import { PipelineState, CpuState } from '@playarm/core';
 
 interface VisualizerCanvasProps {
     pipelineState?: PipelineState;
