@@ -35,15 +35,15 @@
   --panel-bg: #ffffff;
   --glass-bg: rgba(255, 255, 255, 0.88);
 
-  /* Canvas */
-  --viz-bg: #f8fafc;
-  --viz-block: #e8edf5;
-  --viz-line: rgba(51, 65, 85, 0.30);
-  --viz-stage-inactive: #dde3ef;
-  --viz-stroke: #94a3b8;
+  /* Canvas — stronger contrast so blocks are clearly visible */
+  --viz-bg: #f1f5fb;
+  --viz-block: #dbe4f5;
+  --viz-line: rgba(51, 65, 85, 0.50);
+  --viz-stage-inactive: #c8d3e8;
+  --viz-stroke: #4b5680;
 
-  /* Borders — subtle indigo tint */
-  --border-color: rgba(99, 102, 241, 0.14);
+  /* Borders — slightly more visible */
+  --border-color: rgba(99, 102, 241, 0.22);
 
   /* Typography */
   --text-primary: #0f172a;
@@ -156,10 +156,10 @@
   box-shadow: 0 0 12px rgba(79,70,229,0.4);
 }
 
-/* Registers: subtle card style */
+/* Registers: clear label/value separation */
 :root[data-theme="light"] .reg-item {
   background: #f1f5fd;
-  border: 1px solid rgba(99,102,241,0.12);
+  border: 1px solid rgba(99,102,241,0.18);
 }
 
 :root[data-theme="light"] .reg-item:hover {
@@ -167,23 +167,53 @@
   background: #eef0fd;
 }
 
-/* Flags */
-:root[data-theme="light"] .flag {
-  background: #f1f5fd;
-  border-color: rgba(99,102,241,0.15);
-  color: #64748b;
+:root[data-theme="light"] .reg-label {
+  color: #94a3b8;
+  font-size: 0.7rem;
 }
 
-/* Stage cards */
+:root[data-theme="light"] .reg-val {
+  color: #3730a3;
+  font-weight: 700;
+}
+
+/* Flags — clearer unset state */
+:root[data-theme="light"] .flag {
+  background: #e8edf8;
+  border: 1px solid #b8c4e0;
+  color: #64748b;
+  font-weight: 700;
+}
+
+:root[data-theme="light"] .flag.set {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(79,70,229,0.35);
+}
+
+/* Stage cards — stronger contrast */
 :root[data-theme="light"] .stage-card {
-  background: #f8faff;
-  border-color: rgba(99,102,241,0.12);
+  background: #eef1fa;
+  border: 1px solid #c5cfe8;
+}
+
+:root[data-theme="light"] .stage-name {
+  color: #475569;
+}
+
+:root[data-theme="light"] .stage-card .text-muted {
+  color: #94a3b8 !important;
 }
 
 :root[data-theme="light"] .stage-card.active {
-  background: rgba(79,70,229,0.06);
+  background: rgba(79,70,229,0.07);
   border-color: #6366f1;
   box-shadow: 0 4px 16px rgba(79,70,229,0.12);
+}
+
+:root[data-theme="light"] .stage-card.active .stage-name {
+  color: #4f46e5;
 }
 
 /* Signal tags */
@@ -211,6 +241,16 @@
   border-color: #6366f1;
   box-shadow: 0 0 0 4px rgba(79,70,229,0.12);
 }
+
+/* Machine code table */
+:root[data-theme="light"] .machine-code-table th {
+  background: #f1f5fd;
+}
+
+:root[data-theme="light"] .bit-cond { color: #c0392b; }
+:root[data-theme="light"] .bit-op   { color: #b7660a; }
+:root[data-theme="light"] .bit-reg  { color: #1a5fb4; }
+:root[data-theme="light"] .bit-imm  { color: #1a7a34; }
 
 /* Memory items */
 :root[data-theme="light"] .mem-item {
@@ -824,7 +864,7 @@ h3::after {
   font-family: var(--font-mono);
   font-size: 0.8rem;
   text-align: left;
-  background: #080808;
+  background: var(--panel-bg);
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid var(--border-color);
@@ -833,7 +873,7 @@ h3::after {
 .machine-code-table th,
 .machine-code-table td {
   padding: 0.6rem 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .machine-code-table th {
@@ -859,8 +899,8 @@ h3::after {
 }
 
 .mc-addr { color: var(--text-secondary); }
-.mc-hex  { color: #e6edf3; font-weight: 600; letter-spacing: 1px; }
-.mc-asm  { color: #e6edf3; }
+.mc-hex  { color: var(--text-primary); font-weight: 600; letter-spacing: 1px; }
+.mc-asm  { color: var(--text-primary); }
 
 /* Bit field coloring */
 .mc-bits {
@@ -900,7 +940,81 @@ h3::after {
   letter-spacing: 0.05em;
 }
 
-.stage-badge.fetch  { background: rgba(47, 129, 247, 0.15); color: #2f81f7; border: 1px solid rgba(47, 129, 247, 0.3); }
-.stage-badge.decode { background: rgba(210, 153, 34, 0.15); color: #d29922; border: 1px solid rgba(210, 153, 34, 0.3); }
-.stage-badge.exec   { background: rgba(63, 185, 80, 0.15); color: #3fb950; border: 1px solid rgba(63, 185, 80, 0.3); }
+.stage-badge.fetch     { background: rgba(47, 129, 247, 0.15); color: #2f81f7; border: 1px solid rgba(47, 129, 247, 0.3); }
+.stage-badge.decode    { background: rgba(210, 153, 34, 0.15); color: #d29922; border: 1px solid rgba(210, 153, 34, 0.3); }
+.stage-badge.exec      { background: rgba(63, 185, 80, 0.15);  color: #3fb950; border: 1px solid rgba(63, 185, 80, 0.3); }
+.stage-badge.memory    { background: rgba(163, 113, 247, 0.15); color: #a371f7; border: 1px solid rgba(163, 113, 247, 0.3); }
+.stage-badge.writeback { background: rgba(248, 81, 73, 0.15);  color: #f85149; border: 1px solid rgba(248, 81, 73, 0.3); }
+
+.mc-row-memory    { background: rgba(163, 113, 247, 0.08); box-shadow: inset 2px 0 0 #a371f7; }
+.mc-row-writeback { background: rgba(248, 81, 73, 0.08);   box-shadow: inset 2px 0 0 #f85149; }
+
+/* ── Completion banner ─────────────────────────────────────────────────────── */
+.completion-banner {
+  background: rgba(63, 185, 80, 0.1);
+  color: var(--success-color);
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  border: 1px solid var(--success-color);
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.completion-banner button {
+  background: rgba(63, 185, 80, 0.15);
+  border: 1px solid rgba(63, 185, 80, 0.4);
+  color: var(--success-color);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.3rem 0.75rem;
+  border-radius: 6px;
+}
+
+/* ── Stage badge — prevent clipping ───────────────────────────────────────── */
+.machine-code-table td:last-child {
+  white-space: nowrap;
+  min-width: 100px;
+}
+
+/* ── Memory empty state ───────────────────────────────────────────────────── */
+.text-muted {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+:root[data-theme="light"] .memory-list .text-muted {
+  color: #94a3b8;
+  background: #f1f5fd;
+  border: 1px dashed #c5cfe8;
+  border-radius: 8px;
+  padding: 0.75rem;
+  text-align: center;
+  display: block;
+}
+
+/* ── Debug overlay — light theme ──────────────────────────────────────────── */
+:root[data-theme="light"] .microarch-container [style*="backgroundColor"] {
+  box-shadow: 0 2px 8px rgba(15,23,42,0.12) !important;
+}
+
+/* ── Panel borders — slightly stronger in light theme ─────────────────────── */
+:root[data-theme="light"] .panel {
+  border-color: rgba(99, 102, 241, 0.18);
+}
+
+/* ── Registers grid — single column in hex mode for readability ───────────── */
+:root[data-theme="light"] .registers-grid {
+  grid-template-columns: 1fr;
+}
+
+/* ── Control signals panel background ────────────────────────────────────── */
+:root[data-theme="light"] .control-signals-panel {
+  background: #f8faff;
+  border-top-color: rgba(99,102,241,0.15);
+}
 
