@@ -60,16 +60,20 @@ const MachineCodeTable: React.FC<{ parsed: Instruction[]; currentPc: number; vie
                 <tbody>
                     {parsed.map((inst) => {
                         const addr = inst.address ?? 0;
-                        const isFetch = addr === currentPc;
-                        const isDecode = addr === currentPc - 4;
-                        const isExecute = addr === currentPc - 8;
+                        const isFetch     = addr === currentPc;
+                        const isDecode    = addr === currentPc - 4;
+                        const isExecute   = addr === currentPc - 8;
+                        const isMemory    = addr === currentPc - 12;
+                        const isWriteBack = addr === currentPc - 16;
 
                         let rowClass = '';
                         let stageLabel = '';
                         let stageCls = '';
-                        if (isFetch) { rowClass = 'mc-row-fetch'; stageLabel = '⬇ Fetch'; stageCls = 'stage-badge fetch'; }
-                        if (isDecode) { rowClass = 'mc-row-decode'; stageLabel = '🔍 Decode'; stageCls = 'stage-badge decode'; }
-                        if (isExecute) { rowClass = 'mc-row-execute'; stageLabel = '⚙ Execute'; stageCls = 'stage-badge exec'; }
+                        if (isFetch)     { rowClass = 'mc-row-fetch';      stageLabel = '⬇ Fetch';     stageCls = 'stage-badge fetch'; }
+                        if (isDecode)    { rowClass = 'mc-row-decode';     stageLabel = '🔍 Decode';    stageCls = 'stage-badge decode'; }
+                        if (isExecute)   { rowClass = 'mc-row-execute';    stageLabel = '⚙ Execute';   stageCls = 'stage-badge exec'; }
+                        if (isMemory)    { rowClass = 'mc-row-memory';     stageLabel = '💾 Memory';    stageCls = 'stage-badge memory'; }
+                        if (isWriteBack) { rowClass = 'mc-row-writeback';  stageLabel = '✎ WriteBack'; stageCls = 'stage-badge writeback'; }
 
                         const binary = inst.binary ?? '0'.repeat(32);
                         const hex = inst.machineCode ?? '????????';
