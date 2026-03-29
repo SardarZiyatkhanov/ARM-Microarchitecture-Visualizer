@@ -1,12 +1,12 @@
 {
   "name": "mobile",
-  "main": "expo-router/entry",
+  "main": "index",
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint"
   },
@@ -18,8 +18,10 @@
     "@react-navigation/bottom-tabs": "^7.15.5",
     "@react-navigation/elements": "^2.9.10",
     "@react-navigation/native": "^7.1.33",
+    "@shopify/react-native-skia": "2.4.18",
     "expo": "55.0.10-canary-20260328-bdc6273",
     "expo-constants": "55.0.10-canary-20260328-bdc6273",
+    "expo-dev-client": "55.0.20-canary-20260328-bdc6273",
     "expo-device": "55.0.11-canary-20260328-bdc6273",
     "expo-font": "55.0.5-canary-20260328-bdc6273",
     "expo-glass-effect": "55.0.9-canary-20260328-bdc6273",
