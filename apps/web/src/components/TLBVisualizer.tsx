@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TLBState, TLB_SIZE, PAGE_SIZE } from '@playarm/core';
 
 interface TLBVisualizerProps {
@@ -10,24 +10,34 @@ const fmt = (n: number, pad = 4) =>
     '0x' + n.toString(16).toUpperCase().padStart(pad, '0');
 
 export const TLBVisualizer: React.FC<TLBVisualizerProps> = ({ tlbState, lastAccess }) => {
+    const [open, setOpen] = useState(false);
     const { entries, pageTable, accessLog, hitCount, missCount } = tlbState;
     const total = hitCount + missCount;
     const hitRate = total === 0 ? 0 : Math.round((hitCount / total) * 100);
 
     return (
         <section className="panel" style={{ marginTop: '1.25rem' }}>
-            {/* ── Header ── */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            {/* ── Header / toggle ── */}
+            <div
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
+                onClick={() => setOpen(v => !v)}
+            >
                 <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '1.1rem' }}>🔍</span> TLB &amp; Virtual Memory
+                    <span style={{ fontSize: '1rem' }}>🔍</span> TLB &amp; Virtual Memory
                 </h3>
-                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
                     <StatBadge label="Hits" value={hitCount} color="#22c55e" />
                     <StatBadge label="Misses" value={missCount} color="#f97316" />
                     <StatBadge label="Hit Rate" value={`${hitRate}%`} color="#818cf8" />
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" style={{ opacity: 0.4, transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'none' }}>
+                        <path d="M6 8L1 3h10z"/>
+                    </svg>
                 </div>
             </div>
 
+            {!open && <div style={{ marginTop: '0.4rem', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Click to expand</div>}
+
+            {open && <>
             {/* ── Last access highlight ── */}
             {lastAccess && (
                 <div style={{
@@ -181,6 +191,7 @@ export const TLBVisualizer: React.FC<TLBVisualizerProps> = ({ tlbState, lastAcce
                 <span>Offset = addr &amp; 0xFFF (within 4 KB page)</span>
                 <span>Replacement: LRU</span>
             </div>
+            </>}
         </section>
     );
 };

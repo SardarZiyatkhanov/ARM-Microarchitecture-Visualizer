@@ -1,6 +1,7 @@
 export type Register = 'R0' | 'R1' | 'R2' | 'R3' | 'R4' | 'R5' | 'R6' | 'R7' | 'PC' | 'LR' | 'SP';
 
-export type Opcode = 'ADD' | 'SUB' | 'MOV' | 'LDR' | 'STR' | 'CMP' | 'B' | 'BEQ' | 'BNE';
+export type Opcode = 'ADD' | 'SUB' | 'MOV' | 'LDR' | 'STR' | 'CMP' | 'B' | 'BEQ' | 'BNE' | 'BL' | 'BX'
+    | 'PUSH' | 'POP' | 'MUL' | 'LSL' | 'LSR' | 'AND' | 'ORR' | 'EOR' | 'SUBS' | 'BGT' | 'BLT' | 'BGE' | 'BLE';
 
 export interface Instruction {
     id: string;
@@ -54,6 +55,9 @@ export interface StageContent {
         src2Reg?: string;
         destReg?: string;
         immValue?: number;
+        memOffset?: number;   // signed immediate offset for LDR/STR addressing
+        writeBack?: boolean;  // pre-index with ! (W bit)
+        postIndex?: boolean;  // post-index mode [Rn], #offset
     };
     controlSignals?: ControlSignals;
     executionResult?: number;

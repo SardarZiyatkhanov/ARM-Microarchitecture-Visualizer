@@ -8,6 +8,7 @@ interface InstructionInputProps {
     onTitleChange: (title: string) => void;
     onSave?: () => void;
     onLoad?: () => void;
+    onDownload?: () => void;
     parsed: Instruction[];
     errors: ParseError[];
     /** Current Program Counter — used to highlight the instruction being Fetched */
@@ -106,7 +107,7 @@ const MachineCodeTable: React.FC<{ parsed: Instruction[]; currentPc: number; vie
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const InstructionInput: React.FC<InstructionInputProps> = ({
-    code, onChange, title, onTitleChange, onSave, onLoad, parsed, errors, currentPc = 0
+    code, onChange, title, onTitleChange, onSave, onLoad, onDownload, parsed, errors, currentPc = 0
 }) => {
     const [viewMode, setViewMode] = useState<'hex' | 'binary'>('hex');
 
@@ -114,10 +115,26 @@ export const InstructionInput: React.FC<InstructionInputProps> = ({
         <section className="panel instruction-panel">
             {/* ── Header ── */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3>Assembly Input</h3>
-                <div className="control-group">
-                    {onLoad && <button className="btn btn-outline" onClick={onLoad}>📁 Load</button>}
-                    {onSave && <button className="btn btn-primary" onClick={onSave}>💾 Save</button>}
+                <h3 style={{ margin: 0 }}>Assembly Input</h3>
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    {onDownload && (
+                        <button className="btn btn-outline" onClick={onDownload} title="Download as .s file"
+                            style={{ height: '30px', fontSize: '0.72rem', padding: '0 0.65rem' }}>
+                            ⬇ Download
+                        </button>
+                    )}
+                    {onLoad && (
+                        <button className="btn btn-outline" onClick={onLoad}
+                            style={{ height: '30px', fontSize: '0.72rem', padding: '0 0.65rem' }}>
+                            📁 Load
+                        </button>
+                    )}
+                    {onSave && (
+                        <button className="btn btn-primary" onClick={onSave}
+                            style={{ height: '30px', fontSize: '0.72rem', padding: '0 0.65rem' }}>
+                            💾 Save
+                        </button>
+                    )}
                 </div>
             </div>
 
