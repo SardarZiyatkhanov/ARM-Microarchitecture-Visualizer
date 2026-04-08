@@ -398,6 +398,241 @@ body.dark .mdb-tip {
   color: #8b949e;
 }
 
+/* ── Header user controls ──────────────────────────────────────────────────── */
+
+.mdb-signin-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid #d0d7de;
+  background: transparent;
+  color: #57606a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+body.dark .mdb-signin-btn { border-color: #30363d; color: #8b949e; }
+
+.mdb-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2f81f7 0%, #a371f7 100%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ── Account card (Learn tab) ──────────────────────────────────────────────── */
+
+.mdb-account-card {
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+body.dark .mdb-account-card { background: #161b22; border-color: #30363d; }
+
+.mdb-account-info { display: flex; align-items: center; gap: 10px; overflow: hidden; }
+
+.mdb-account-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2f81f7 0%, #a371f7 100%);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mdb-account-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2328;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body.dark .mdb-account-name { color: #e6edf3; }
+
+.mdb-account-email {
+  font-size: 11px;
+  color: #57606a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body.dark .mdb-account-email { color: #8b949e; }
+
+.mdb-signout-btn {
+  flex-shrink: 0;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px solid #d0d7de;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: #57606a;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+body.dark .mdb-signout-btn { border-color: #30363d; color: #8b949e; }
+
+.mdb-signin-cta { border-color: rgba(47,129,247,0.35) !important; }
+
+/* ── Auth bottom sheet ─────────────────────────────────────────────────────── */
+
+.mdb-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+}
+
+.mdb-sheet {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 18px 18px 0 0;
+  padding: 12px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: sheet-up 0.25s ease;
+}
+body.dark .mdb-sheet { background: #161b22; }
+
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.mdb-sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: #d0d7de;
+  margin: 0 auto 8px;
+  flex-shrink: 0;
+}
+body.dark .mdb-sheet-handle { background: #30363d; }
+
+.mdb-sheet-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1f2328;
+  text-align: center;
+  margin-bottom: 4px;
+}
+body.dark .mdb-sheet-title { color: #e6edf3; }
+
+.mdb-sheet-error {
+  background: rgba(209,36,47,0.08);
+  border: 1px solid rgba(209,36,47,0.25);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 12px;
+  color: #d1242f;
+  text-align: center;
+}
+body.dark .mdb-sheet-error { color: #ff7b72; }
+
+.mdb-oauth-btn {
+  width: 100%;
+  padding: 13px;
+  border-radius: 10px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s;
+}
+.mdb-oauth-btn:disabled { opacity: 0.5; }
+.mdb-oauth-btn:active:not(:disabled) { opacity: 0.7; }
+
+.mdb-oauth-google { background: #ffffff; color: #1f2328; border: 1px solid #d0d7de !important; }
+body.dark .mdb-oauth-google { background: #21262d; color: #e6edf3; border-color: #30363d !important; }
+
+.mdb-oauth-github { background: #24292f; color: #ffffff; }
+
+.mdb-oauth-primary { background: #2f81f7; color: #ffffff; border: none !important; }
+
+.mdb-sheet-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #8b949e;
+  font-size: 12px;
+}
+.mdb-sheet-divider::before,
+.mdb-sheet-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #d0d7de;
+}
+body.dark .mdb-sheet-divider::before,
+body.dark .mdb-sheet-divider::after { background: #30363d; }
+
+.mdb-email-btn {
+  width: 100%;
+  padding: 13px;
+  border-radius: 10px;
+  border: 1px solid #d0d7de;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2328;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+body.dark .mdb-email-btn { border-color: #30363d; color: #e6edf3; }
+.mdb-email-alt { color: #57606a; font-weight: 500; }
+body.dark .mdb-email-alt { color: #8b949e; }
+
+.mdb-sheet-input {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 10px;
+  border: 1px solid #d0d7de;
+  background: #f6f8fa;
+  font-size: 14px;
+  color: #1f2328;
+  outline: none;
+  box-sizing: border-box;
+}
+body.dark .mdb-sheet-input { background: #0d1117; border-color: #30363d; color: #e6edf3; }
+
+.mdb-sheet-note {
+  font-size: 11px;
+  color: #8b949e;
+  text-align: center;
+  margin: 0;
+  line-height: 1.5;
+}
+
 /* ── Bottom nav ────────────────────────────────────────────────────────────── */
 
 .mdb-nav {

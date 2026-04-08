@@ -46,9 +46,9 @@ function App() {
         return () => unsubscribe();
     }, []);
 
-    // ── Mobile: no auth gate ─────────────────────────────────────────────────
+    // ── Mobile: no auth gate — user prop enables optional sign-in ───────────
     if (isMobile) {
-        return <MobileDashboard />;
+        return <MobileDashboard user={user} />;
     }
 
     // ── Desktop: auth-gated full simulator ──────────────────────────────────
