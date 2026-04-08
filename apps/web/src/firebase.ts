@@ -2,21 +2,19 @@ import { initializeApp } from "firebase/app";
 import { initializeFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
-// Ваша конфигурация Firebase
 const firebaseConfig = {
-    apiKey: "AIzaSyC9_1X0pWeuRxLZ6eC3zbQP__xK-xsyq90",
-    authDomain: "playarm.firebaseapp.com",
-    projectId: "playarm",
-    storageBucket: "playarm.firebasestorage.app",
-    messagingSenderId: "966877398444",
-    appId: "1:966877398444:web:79ccffa900851b7143e609",
-    measurementId: "G-PCVP1HVPEH"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-// Инициализация самого приложения Firebase
 const app = initializeApp(firebaseConfig);
 
-// Инициализация базы данных с強制 Long Polling (исправляет блокировки WebSocket в универах/корпоративных сетях)
+// Force long polling — fixes WebSocket blocks on university/corporate networks
 export const db = initializeFirestore(app, {
     experimentalForceLongPolling: true
 });
