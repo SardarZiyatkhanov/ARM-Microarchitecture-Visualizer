@@ -1,56 +1,126 @@
-# Welcome to your Expo app 👋
+# PlayARM Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+ARM pipeline simulator for iOS and Android — the native companion to the PlayARM web app.
 
-## Get started
+Built with **Expo SDK 55** and **React Native 0.83.4**, using file-based routing via Expo Router.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Getting started
 
 ```bash
-npm run reset-project
+# from the monorepo root
+npm install
+
+# start the dev server
+cd apps/mobile
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Then open in:
+- **iOS Simulator** — press `i`
+- **Android Emulator** — press `a`
+- **Expo Go** — scan the QR code
 
-### Other setup steps
+---
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Features
 
-## Learn more
+### Pipeline Simulator (index tab)
+- 5-stage pipeline canvas: Fetch → Decode → Execute → Memory → WriteBack
+- Step / Play / Pause / Reset controls with adjustable speed (Slow / Normal / Fast)
+- Breakpoints — tap any line number to pause when that instruction hits Execute
+- RAW and control hazard detection with overlay badges on the canvas
+- Haptic feedback on each step (`expo-haptics`)
 
-To learn more about developing your project with Expo, look at the following resources:
+### Assembly Editor
+- Syntax-highlighted overlay behind the `TextInput`:
+  - Keywords → blue, Registers → green, Immediates → orange, Labels → purple, Comments → grey
+- Snippets menu (`+`) with 5 pre-built programs: loop, factorial, array_sum, fibonacci, stack_call
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Panels (bottom tab bar)
+| Tab | Contents |
+|---|---|
+| Registers | R0–R15, SP, LR, PC with sparkline history (last 8 values) |
+| Memory | Word-addressed memory viewer |
+| Stack | Stack contents with SP pointer |
+| TLB | Translation Lookaside Buffer entries + hit/miss log |
+| Pseudocode | Human-readable pseudocode trace |
+| Trace | Cycle-by-cycle execution log |
+| Encode | 32-bit instruction encoding with bit-field breakdown (HEX/BIN) |
+| Stats | CPI/IPC, instruction mix chart, register/flag activity |
 
-## Join the community
+### Learn tab
+- **Book Programs** — 11 programs mapped to textbook chapters (filter by chapter, full-text search)
+- **Exercises** — 15 guided exercises with instant feedback and persistent progress:
+  - Sum two numbers, count to 5, isolate nibble, multiply by shift, stack round-trip *(ch 3–7)*
+  - Negate, power-of-2 check, modulo, max, absolute value, swap, count set bits, nibble pack, multiply-by-3, GCD *(new)*
+- **Reference** — collapsible instruction reference with calling convention diagram
 
-Join our community of developers creating universal apps.
+### Settings & Onboarding
+- **Settings modal** — number format (hex/dec/bin), playback speed, editor font size, haptic toggle; persisted via `AsyncStorage`
+- **Onboarding** — 3-slide tutorial shown once on first launch; re-triggerable from Settings
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+## Theme
+
+The app follows the device's color scheme automatically (`useColorScheme()`). No manual toggle is needed.
+
+A 50+ token `appPalette` (dark and light variants) is passed through `makeStyles(c: AppPalette)` + `useMemo` in every component — styles recompute only when the color scheme changes.
+
+---
+
+## Project structure
+
+```text
+apps/mobile/
+├── src/
+│   ├── app/
+│   │   ├── _layout.tsx         # Tab layout, onboarding on first launch
+│   │   ├── index.tsx           # Pipeline tab
+│   │   └── explore.tsx         # Learn tab
+│   ├── components/
+│   │   ├── AssemblyEditor.tsx
+│   │   ├── VisualizerCanvas.tsx
+│   │   ├── RegisterGrid.tsx
+│   │   ├── MemoryList.tsx
+│   │   ├── StackPanel.tsx
+│   │   ├── TLBList.tsx
+│   │   ├── PseudocodePanel.tsx
+│   │   ├── EncodingPanel.tsx
+│   │   ├── StatsPanel.tsx
+│   │   ├── SettingsModal.tsx
+│   │   ├── OnboardingModal.tsx
+│   │   └── CallingConventionViz.tsx
+│   ├── constants/
+│   │   └── theme.ts            # appPalette + AppPalette type
+│   ├── context/
+│   │   └── SimulatorContext.tsx
+│   ├── hooks/
+│   │   └── use-theme.ts        # useAppTheme()
+│   └── screens/
+│       └── PipelineScreen.tsx  # Main screen (phone + tablet layouts)
+└── app.json
+```
+
+---
+
+## Build
+
+```bash
+# type-check
+npx tsc --noEmit
+
+# production bundle (Android)
+npx expo export --platform android
+
+# production bundle (iOS)
+npx expo export --platform ios
+```
+
+---
+
+## Shared core
+
+The ARM assembler, pipeline engine, and shared types live in `packages/core` (`@playarm/core`) and are shared between the web and mobile apps.

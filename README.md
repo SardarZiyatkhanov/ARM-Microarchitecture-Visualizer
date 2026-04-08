@@ -1,8 +1,8 @@
 # PlayARM: ARM Microarchitecture Visualizer
 
 ![Status](https://img.shields.io/badge/Status-In--Progress-orange)
-![Tech Stack](https://img.shields.io/badge/Tech--Stack-React%20%7C%20TypeScript%20%7C%20Fabric.js%20%7C%20Firebase-blue)
-![Last Updated](https://img.shields.io/badge/Last%20Updated-March%202026-green)
+![Tech Stack](https://img.shields.io/badge/Tech--Stack-React%20%7C%20TypeScript%20%7C%20Expo%20%7C%20Firebase-blue)
+![Last Updated](https://img.shields.io/badge/Last%20Updated-April%202026-green)
 
 **PlayARM** is an interactive educational platform designed to visualize the execution of ARM assembly instructions at the microarchitecture level. It provides a deep dive into the internal workings of a processor, bridging the gap between high-level code and low-level hardware execution.
 
@@ -27,8 +27,25 @@ Developed as a **Senior Design Project (SDP)** at **ADA University**, this tool 
 - **Access Log**: Tracks the last 20 memory accesses with hit/miss status and translated addresses.
 - **Hit Rate Statistics**: Live hit count, miss count, and hit rate percentage updated on every memory instruction.
 
+### 📱 Mobile App (React Native / Expo) *(Added April 2026)*
+- **Full ARM Pipeline Simulator on iOS & Android**: Native port of the web simulator built with Expo SDK 55 and React Native 0.83.4.
+- **System-Adaptive Light/Dark Theme**: Automatically follows the device's color scheme preference (`useColorScheme`) — no manual toggle needed. A GitHub-inspired palette (50+ semantic tokens) covers both dark and light variants across every screen.
+- **Assembly Editor with Syntax Highlighting**: Color-coded token overlay (keywords → blue, registers → green, immediates → orange, labels → purple, comments → grey) rendered behind a transparent `TextInput` for zero-latency typing.
+- **Snippets Menu**: One-tap insertion of 5 pre-built ARM programs (loop, factorial, array_sum, fibonacci, stack_call) directly into the editor.
+- **Instruction Encoding Panel**: Bit-field breakdown of each instruction's 32-bit ARM encoding with HEX/BIN toggle and color-coded field segments (cond, op, I, opcode, S, Rn, Rd, imm/Rm).
+- **Stats Panel**: Live CPI/IPC metrics, instruction mix bar chart (data movement / arithmetic / logical / branch / memory), and per-register/flag activity heat map.
+- **Hazard Detection**: RAW (Read After Write) and control hazard detection runs before each pipeline advance — hazards surface as colored badge overlays on the pipeline canvas.
+- **Register History Sparklines**: Each register cell shows a mini 8-bar sparkline of its last 8 values, updated on every step without triggering re-renders (via `useRef`).
+- **Haptic Feedback**: Light vibration on step via `expo-haptics`.
+- **Settings Panel**: Persistent user preferences (number format, playback speed, editor font size, haptics) stored in `AsyncStorage`.
+- **First-Launch Onboarding**: 3-slide animated tutorial shown once on install, with option to re-trigger from Settings.
+- **15 Guided Exercises**: 5 original + 10 new exercises (negate, power-of-2 check, modulo, max, absolute value, swap, count set bits, nibble pack, multiply-by-3 without MUL, GCD) with instant feedback and progress persistence.
+- **Book Programs Tab**: 11 pre-built programs mapped to textbook chapters with chapter filter and full-text search.
+- **Calling Convention Visualization**: Interactive diagram showing AAPCS register roles (arguments, return value, callee-saved, SP, LR, PC).
+
 ### 🎨 Theme & UI
-- **Dark / Light Mode Toggle**: Switch between dark and light themes with preference persisted in localStorage. The Fabric.js canvas redraws dynamically on theme change.
+- **Dark / Light Mode Toggle** (web): Switch between dark and light themes with preference persisted in localStorage.
+- **System-Adaptive Theme** (mobile): Follows the OS color scheme automatically — no toggle required.
 - **Modern Responsive Design**: Glassmorphism-inspired dark UI with smooth hover effects and micro-animations.
 
 ### ☁️ Cloud Features
@@ -47,6 +64,7 @@ Developed as a **Senior Design Project (SDP)** at **ADA University**, this tool 
 
 ## 🛠️ Tech Stack
 
+### Web App
 | Layer | Technology |
 |---|---|
 | **Frontend** | [React.js](https://reactjs.org/) + [TypeScript](https://www.typescriptlang.org/) |
@@ -55,35 +73,61 @@ Developed as a **Senior Design Project (SDP)** at **ADA University**, this tool 
 | **Database / Auth** | [Firebase Firestore](https://firebase.google.com/) + Firebase Auth |
 | **Styling** | Vanilla CSS — dark/light theming, responsive layout |
 
+### Mobile App
+| Layer | Technology |
+|---|---|
+| **Framework** | [Expo](https://expo.dev/) SDK 55 + [React Native](https://reactnative.dev/) 0.83.4 |
+| **Navigation** | [Expo Router](https://expo.github.io/router/) (file-based, tab layout) |
+| **Language** | TypeScript (strict) |
+| **Persistence** | `AsyncStorage` — settings, exercise progress, onboarding state |
+| **Haptics** | `expo-haptics` — light feedback on pipeline step |
+| **Theming** | `useColorScheme()` + custom `appPalette` (dark/light token sets) |
+| **Shared Core** | `@playarm/core` — ARM assembler, pipeline engine, types (monorepo package) |
+
 ---
 
 ## 📦 Project Structure
 
 ```text
-ARM-Microarchitecture-Visualizer/
-├── src/
-│   ├── components/
-│   │   ├── Auth.tsx                # Login / Sign-up UI
-│   │   ├── ControlPanel.tsx        # Play / Step / Reset controls
-│   │   ├── InstructionInput.tsx    # ARM assembly editor with error display
-│   │   ├── PipelineVisualizer.tsx  # Main simulation orchestrator
-│   │   ├── ThemeToggle.tsx         # Dark / Light mode toggle (NEW)
-│   │   ├── TLBVisualizer.tsx       # TLB & Virtual Memory panel (NEW)
-│   │   └── VisualizerCanvas.tsx    # Fabric.js pipeline canvas
-│   ├── core/
-│   │   ├── assembler.ts            # ARM assembly parser
-│   │   ├── memory.ts               # TLB & virtual memory simulation (NEW)
-│   │   ├── pipeline.ts             # 5-stage pipeline simulation engine
-│   │   └── types.ts                # Shared TypeScript types & constants
-│   ├── firebase/                   # Firebase configuration
-│   ├── services/
-│   │   └── firestoreService.ts     # Firestore CRUD operations
-│   ├── App.tsx                     # Root component with auth guard
-│   ├── index.css                   # Global styles & design system
-│   └── main.tsx                    # React bootstrap
-├── index.html
-├── tsconfig.json
-└── vite.config.ts
+ARM-Microarchitecture-Visualizer/       ← monorepo root
+├── apps/
+│   ├── web/                            ← React/Vite web simulator
+│   │   └── src/
+│   │       ├── components/             # Auth, ControlPanel, VisualizerCanvas, TLBVisualizer …
+│   │       ├── core/                   # assembler.ts, pipeline.ts, memory.ts, types.ts
+│   │       ├── firebase/               # Firebase config
+│   │       ├── services/               # Firestore CRUD
+│   │       ├── App.tsx
+│   │       └── main.tsx
+│   └── mobile/                         ← Expo / React Native app
+│       └── src/
+│           ├── app/
+│           │   ├── _layout.tsx         # Tab layout + OnboardingModal on first launch
+│           │   ├── index.tsx           # Pipeline tab (PipelineScreen)
+│           │   └── explore.tsx         # Learn tab (book programs, exercises, reference)
+│           ├── components/
+│           │   ├── AssemblyEditor.tsx  # Editor with syntax highlighting & snippets menu
+│           │   ├── VisualizerCanvas.tsx# Native pipeline canvas + hazard badges
+│           │   ├── RegisterGrid.tsx    # Register cells with sparkline history
+│           │   ├── MemoryList.tsx      # Memory viewer
+│           │   ├── StackPanel.tsx      # Stack viewer
+│           │   ├── TLBList.tsx         # TLB viewer
+│           │   ├── PseudocodePanel.tsx # Pseudocode trace
+│           │   ├── EncodingPanel.tsx   # Bit-field instruction encoding
+│           │   ├── StatsPanel.tsx      # CPI/IPC and instruction mix stats
+│           │   ├── SettingsModal.tsx   # Persistent app settings
+│           │   ├── OnboardingModal.tsx # First-launch 3-slide tutorial
+│           │   └── CallingConventionViz.tsx  # AAPCS register diagram
+│           ├── constants/
+│           │   └── theme.ts            # appPalette dark/light + AppPalette type
+│           ├── context/
+│           │   └── SimulatorContext.tsx
+│           ├── hooks/
+│           │   └── use-theme.ts        # useAppTheme() → system color scheme
+│           └── screens/
+│               └── PipelineScreen.tsx  # Main simulator screen (phone + tablet layouts)
+└── packages/
+    └── core/                           # @playarm/core — shared ARM engine (assembler, pipeline, types)
 ```
 
 ---
@@ -231,6 +275,24 @@ On a **TLB Miss**, the simulator walks the page table, allocates a new physical 
 #### Monorepo Migration
 - Project restructured into a monorepo under `apps/web/` (web simulator) and `apps/mobile/` (React Native app, initialized)
 - Core simulation logic (`assembler`, `pipeline`, `types`) extracted to `@playarm/core` shared package
+
+---
+
+### April 2026
+
+#### Mobile App — Full Feature Integration
+- **Instruction Encoding Panel** (`EncodingPanel`) — HEX/BIN toggle, color-coded 32-bit bit-field breakdown (cond, op, I, opcode, S, Rn, Rd, imm/Rm), executing-line highlight
+- **Stats Panel** (`StatsPanel`) — live CPI/IPC, instruction mix bar chart, register and flag activity heat map
+- **Settings Modal** (`SettingsModal`) — number format, playback speed, editor font size, haptic feedback toggle; persisted via `AsyncStorage`
+- **Onboarding Modal** (`OnboardingModal`) — 3-slide first-launch tutorial with skip/next/done flow; shown once and dismissable; re-triggerable from Settings
+- **Syntax highlighting** in `AssemblyEditor` — absolute-positioned token overlay behind the `TextInput`: keywords (blue), registers (green), immediates (orange), labels (purple), comments (grey)
+- **Snippets menu** — `+` button in editor header opens a 5-item overlay: loop, factorial, array_sum, fibonacci, stack_call
+- **Haptic feedback** — `expo-haptics` light impact on every pipeline step
+- **RAW & control hazard detection** — inspects Decode/Execute instructions before each `advancePipeline` call; surfaces hazards as colored badge overlays on the pipeline canvas
+- **Register history sparklines** — `useRef`-based history buffer (last 8 values per register) rendered as 8-bar mini charts below each register cell; reset on simulator reset
+- **10 new exercises** — negate (two's complement), power-of-2 check, modulo (repeated subtraction), max of two, absolute value, register swap, count set bits, nibble packing, multiply-by-3 without MUL, GCD (Euclidean)
+- **System-adaptive light/dark theme** — `useColorScheme()` drives a 50+ token `appPalette` (dark & light variants) applied via `makeStyles(c: AppPalette)` + `useMemo` across every component; `AppPalette` type broadened to `dark | light` union for correct TypeScript inference
+- **TypeScript** — `npx tsc --noEmit` passes with 0 errors after all changes
 
 ---
 
