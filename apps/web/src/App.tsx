@@ -4,6 +4,7 @@ import { auth } from './firebase';
 import Auth from './components/Auth';
 import MobileDashboard from './components/MobileDashboard';
 import PipelineVisualizer from './components/PipelineVisualizer';
+import { applyTheme } from './components/ThemeToggle';
 
 function App() {
     // Responsive: show mobile layout when window < 768px
@@ -18,6 +19,19 @@ function App() {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    // Follow system color-scheme on mobile (no stored preference overrides it)
+    useEffect(() => {
+        if (!isMobile) return;
+        const mq = window.matchMedia('(prefers-color-scheme: dark)');
+        const stored = localStorage.getItem('theme');
+        if (!stored) applyTheme(mq.matches ? 'dark' : 'light');
+        const handler = (e: MediaQueryListEvent) => {
+            if (!localStorage.getItem('theme')) applyTheme(e.matches ? 'dark' : 'light');
+        };
+        mq.addEventListener('change', handler);
+        return () => mq.removeEventListener('change', handler);
+    }, [isMobile]);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
