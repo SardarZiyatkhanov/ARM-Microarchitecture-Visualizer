@@ -1,251 +1,177 @@
-import React from 'react';
-import { StyleSheet, View, Text, Dimensions } from 'react-native';
-import { Canvas, RoundedRect, Line, Circle, Path, Skia, vec, Shadow } from '@shopify/react-native-skia';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-} from 'react-native-reanimated';
-import {
-  Gesture,
-  GestureDetector,
-  GestureHandlerRootView,
-} from 'react-native-gesture-handler';
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import type { PipelineState } from '@playarm/core';
+import { useAppTheme } from '@/hooks/use-theme';
+import type { AppPalette } from '@/constants/theme';
 
-export default function VisualizerCanvas({ activeStages = {} }: { activeStages?: Record<string, boolean> }) {
-  const CANVAS_WIDTH = 1200;
-  const CANVAS_HEIGHT = 800;
-
-  // Colors based on web theme
-  const accentColor = "#2f81f7";
-  const vizBlock = "#161b22";
-  const vizStroke = "#30363d";
-  const vizStageInactive = "#0f1115";
-  const activeStrokeColor = "#2f81f7";
-  const shadowColor = "rgba(47, 129, 247, 0.4)";
-  const textColor = "#8b949e";
-
-  const isFetch = !!activeStages.Fetch;
-  const isDecode = !!activeStages.Decode;
-  const isExecute = !!activeStages.Execute;
-  const isMemory = !!activeStages.Memory;
-  const isWriteBack = !!activeStages.WriteBack;
-
-  const getStroke = (isActive: boolean) => isActive ? activeStrokeColor : vizStroke;
-
-  // Responsive initialization for phones and tablets
-  const windowWidth = Dimensions.get('window').width;
-  const initialScale = Math.min(windowWidth / CANVAS_WIDTH, 1);
-
-  // Gesture shared values
-  const scale = useSharedValue(initialScale); 
-  const savedScale = useSharedValue(initialScale);
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-  const savedTransX = useSharedValue(0);
-  const savedTransY = useSharedValue(0);
-
-  const MIN_SCALE = 0.2;
-  const MAX_SCALE = 3.0;
-  const MAX_PAN_X = 1500;
-  const MAX_PAN_Y = 1000;
-
-  const pinch = Gesture.Pinch()
-    .onUpdate((e) => {
-      let nextScale = savedScale.value * e.scale;
-      if (nextScale < MIN_SCALE) nextScale = MIN_SCALE;
-      if (nextScale > MAX_SCALE) nextScale = MAX_SCALE;
-      scale.value = nextScale;
-    })
-    .onEnd(() => {
-      savedScale.value = scale.value;
-    });
-
-  const pan = Gesture.Pan()
-    .activeOffsetX([-5, 5])
-    .activeOffsetY([-5, 5])
-    .onUpdate((e) => {
-      let nextX = savedTransX.value + e.translationX;
-      let nextY = savedTransY.value + e.translationY;
-      
-      if (nextX > MAX_PAN_X) nextX = MAX_PAN_X;
-      if (nextX < -MAX_PAN_X) nextX = -MAX_PAN_X;
-      if (nextY > MAX_PAN_Y) nextY = MAX_PAN_Y;
-      if (nextY < -MAX_PAN_Y) nextY = -MAX_PAN_Y;
-
-      translateX.value = nextX;
-      translateY.value = nextY;
-    })
-    .onEnd(() => {
-      savedTransX.value = translateX.value;
-      savedTransY.value = translateY.value;
-    });
-
-  const composed = Gesture.Simultaneous(pinch, pan);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: translateX.value },
-      { translateY: translateY.value },
-      { scale: scale.value }
-    ],
-  }));
-
-  // Create Writeback paths
-  const aluWBPath = Skia.Path.Make();
-  aluWBPath.moveTo(780, 480);
-  aluWBPath.lineTo(780, 560);
-  aluWBPath.lineTo(520, 560);
-  aluWBPath.lineTo(520, 504);
-
-  const memWBPath = Skia.Path.Make();
-  memWBPath.moveTo(1060, 480);
-  memWBPath.lineTo(1060, 620);
-  memWBPath.lineTo(480, 620);
-  memWBPath.lineTo(480, 504);
-
-  const stageLabels = ['Fetch', 'Decode', 'Execute', 'Memory', 'WriteBack'];
-  const stageWidth = CANVAS_WIDTH / 6;
-  const arrSize = 18;
-
-  const blockStrokeWidth = 6;
-  const lineStrokeWidth = 8;
-  const shadowBlur = 24;
-
-  return (
-    <GestureHandlerRootView style={styles.container}>
-      <GestureDetector gesture={composed}>
-        <Animated.View style={[styles.canvasWrapper, animatedStyle]}>
-          <View style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}>
-            <Canvas style={styles.canvas}>
-              
-              {/* STAGE INDICATORS */}
-              {stageLabels.map((stageName, i) => {
-                const x = (i + 0.5) * stageWidth;
-                const y = 60;
-                const isActiveStage = !!activeStages[stageName];
-                return (
-                  <React.Fragment key={stageName}>
-                    <Circle cx={x} cy={y} r={24} color={isActiveStage ? accentColor : vizStageInactive} />
-                    <Circle cx={x} cy={y} r={24} color={getStroke(isActiveStage)} style="stroke" strokeWidth={blockStrokeWidth}>
-                      {isActiveStage && <Shadow dx={0} dy={0} blur={15} color={shadowColor} />}
-                    </Circle>
-                    {i < stageLabels.length - 1 && (
-                      <Line 
-                        p1={vec(x + 24, y)} 
-                        p2={vec((i + 1.5) * stageWidth - 24, y)} 
-                        color={vizStroke} 
-                        style="stroke" 
-                        strokeWidth={6} 
-                      />
-                    )}
-                  </React.Fragment>
-                );
-              })}
-
-              {/* DATAPATH BLOCKS */}
-              {/* Instruction Memory */}
-              <RoundedRect x={100} y={340} width={200} height={120} r={8} color={vizBlock} />
-              <RoundedRect x={100} y={340} width={200} height={120} r={8} color={getStroke(isFetch)} style="stroke" strokeWidth={blockStrokeWidth}>
-                {isFetch && <Shadow dx={0} dy={0} blur={shadowBlur} color={shadowColor} />}
-              </RoundedRect>
-
-              {/* Register File */}
-              <RoundedRect x={400} y={300} width={200} height={200} r={8} color={vizBlock} />
-              <RoundedRect x={400} y={300} width={200} height={200} r={8} color={getStroke(isDecode || isWriteBack)} style="stroke" strokeWidth={blockStrokeWidth}>
-                {(isDecode || isWriteBack) && <Shadow dx={0} dy={0} blur={shadowBlur} color={shadowColor} />}
-              </RoundedRect>
-
-              {/* ALU */}
-              <RoundedRect x={700} y={320} width={160} height={160} r={8} color={vizBlock} />
-              <RoundedRect x={700} y={320} width={160} height={160} r={8} color={getStroke(isExecute)} style="stroke" strokeWidth={blockStrokeWidth}>
-                {isExecute && <Shadow dx={0} dy={0} blur={shadowBlur} color={shadowColor} />}
-              </RoundedRect>
-
-              {/* Data Memory */}
-              <RoundedRect x={960} y={320} width={200} height={160} r={8} color={vizBlock} />
-              <RoundedRect x={960} y={320} width={200} height={160} r={8} color={getStroke(isMemory)} style="stroke" strokeWidth={blockStrokeWidth}>
-                {isMemory && <Shadow dx={0} dy={0} blur={shadowBlur} color={shadowColor} />}
-              </RoundedRect>
-
-              {/* DATAPATH LINES & ARROWS */}
-              {/* 1) INST MEM -> REG FILE */}
-              <Line p1={vec(300, 400)} p2={vec(396, 400)} color={getStroke(isDecode)} strokeWidth={lineStrokeWidth}>
-                {isDecode && <Shadow dx={0} dy={0} blur={shadowBlur} color={shadowColor} />}
-              </Line>
-              <Path path={`M 396 400 L ${396-arrSize} ${400-arrSize/2} L ${396-arrSize} ${400+arrSize/2} Z`} color={getStroke(isDecode)} />
-
-              {/* 2) REG FILE -> ALU */}
-              <Line p1={vec(600, 400)} p2={vec(696, 400)} color={getStroke(isExecute)} strokeWidth={lineStrokeWidth}>
-                 {isExecute && <Shadow dx={0} dy={0} blur={shadowBlur} color={shadowColor} />}
-              </Line>
-              <Path path={`M 696 400 L ${696-arrSize} ${400-arrSize/2} L ${696-arrSize} ${400+arrSize/2} Z`} color={getStroke(isExecute)} />
-
-              {/* 3) ALU -> DATA MEM */}
-              <Line p1={vec(860, 400)} p2={vec(956, 400)} color={getStroke(isMemory)} strokeWidth={lineStrokeWidth}>
-                 {isMemory && <Shadow dx={0} dy={0} blur={shadowBlur} color={shadowColor} />}
-              </Line>
-              <Path path={`M 956 400 L ${956-arrSize} ${400-arrSize/2} L ${956-arrSize} ${400+arrSize/2} Z`} color={getStroke(isMemory)} />
-
-              {/* 4) ALU -> REG FILE (writeback path) */}
-              <Path path={aluWBPath} color={getStroke(isWriteBack)} style="stroke" strokeWidth={lineStrokeWidth} strokeJoin="round">
-                 {isWriteBack && <Shadow dx={0} dy={0} blur={shadowBlur} color={shadowColor} />}
-              </Path>
-              <Path path={`M 520 504 L ${520-arrSize/2} ${504+arrSize} L ${520+arrSize/2} ${504+arrSize} Z`} color={getStroke(isWriteBack)} />
-
-              {/* 5) DATA MEM -> REG FILE (load writeback path) */}
-              <Path path={memWBPath} color={getStroke(isWriteBack)} style="stroke" strokeWidth={lineStrokeWidth} strokeJoin="round">
-                 {isWriteBack && <Shadow dx={0} dy={0} blur={shadowBlur} color={shadowColor} />}
-              </Path>
-              <Path path={`M 480 504 L ${480-arrSize/2} ${504+arrSize} L ${480+arrSize/2} ${504+arrSize} Z`} color={getStroke(isWriteBack)} />
-
-            </Canvas>
-
-            {/* TEXT OVERLAY */}
-            <View style={styles.textOverlay}>
-              {/* Stages */}
-              <Text style={[styles.label, { top: 96, left: stageWidth * 0.5 - 50, width: 100, color: isFetch ? accentColor : textColor, fontWeight: isFetch ? '800' : '600' }]}>Fetch</Text>
-              <Text style={[styles.label, { top: 96, left: stageWidth * 1.5 - 50, width: 100, color: isDecode ? accentColor : textColor, fontWeight: isDecode ? '800' : '600' }]}>Decode</Text>
-              <Text style={[styles.label, { top: 96, left: stageWidth * 2.5 - 50, width: 100, color: isExecute ? accentColor : textColor, fontWeight: isExecute ? '800' : '600' }]}>Execute</Text>
-              <Text style={[styles.label, { top: 96, left: stageWidth * 3.5 - 50, width: 100, color: isMemory ? accentColor : textColor, fontWeight: isMemory ? '800' : '600' }]}>Memory</Text>
-              <Text style={[styles.label, { top: 96, left: stageWidth * 4.5 - 50, width: 100, color: isWriteBack ? accentColor : textColor, fontWeight: isWriteBack ? '800' : '600' }]}>WriteBack</Text>
-
-              {/* Blocks */}
-              <Text style={[styles.label, { top: 380, left: 150, width: 100, color: isFetch ? accentColor : textColor, fontSize: 28 }]}>INST{'\n'}MEM</Text>
-              <Text style={[styles.label, { top: 380, left: 450, width: 100, color: (isDecode || isWriteBack) ? accentColor : textColor, fontSize: 28 }]}>REG{'\n'}FILE</Text>
-              <Text style={[styles.label, { top: 385, left: 740, width: 80, color: isExecute ? accentColor : textColor, fontSize: 32 }]}>ALU</Text>
-              <Text style={[styles.label, { top: 380, left: 1010, width: 100, color: isMemory ? accentColor : textColor, fontSize: 28 }]}>DATA{'\n'}MEM</Text>
-            </View>
-          </View>
-        </Animated.View>
-      </GestureDetector>
-    </GestureHandlerRootView>
-  );
+interface StageInfo {
+  num: number; name: string; abbrev: string;
+  instruction: string | null; detail: string | null; subDetail: string | null; active: boolean;
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    overflow: 'hidden',
-    backgroundColor: '#0a0c10',
-  },
-  canvasWrapper: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center', 
-  },
-  canvas: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
-  textOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    pointerEvents: 'none',
-  },
-  label: {
-    position: 'absolute',
-    fontSize: 22, 
-    fontWeight: 'bold',
-    textAlign: 'center',
-  }
-});
+function buildStages(pipeline: PipelineState): StageInfo[] {
+  const decode = pipeline.Decode;
+  const exec = pipeline.Execute;
+  const mem = pipeline.Memory;
+  const wb = pipeline.WriteBack;
+
+  const decodeDetail = decode.decoded
+    ? [decode.decoded.destReg, decode.decoded.src1Reg, decode.decoded.src2Reg].filter(Boolean).join(', ')
+    : null;
+
+  const execDetail = exec.executionResult !== undefined
+    ? `= ${(exec.executionResult >>> 0).toString(16).toUpperCase().padStart(8, '0')}`
+    : null;
+
+  const memDetail = mem.memoryAddress !== undefined
+    ? `addr 0x${mem.memoryAddress.toString(16).toUpperCase()}`
+    : null;
+
+  return [
+    { num: 1, name: 'Fetch', abbrev: 'IF', instruction: pipeline.Fetch.instruction?.raw ?? null, detail: pipeline.Fetch.instruction ? `line ${pipeline.Fetch.instruction.line}` : null, subDetail: pipeline.Fetch.instruction?.machineCode ?? null, active: !!pipeline.Fetch.instruction },
+    { num: 2, name: 'Decode', abbrev: 'ID', instruction: decode.instruction?.raw ?? null, detail: decodeDetail, subDetail: decode.controlSignals ? decode.controlSignals.aluOp : null, active: !!decode.instruction },
+    { num: 3, name: 'Execute', abbrev: 'EX', instruction: exec.instruction?.raw ?? null, detail: execDetail, subDetail: exec.controlSignals?.aluSrc === 'imm' ? 'imm operand' : exec.instruction ? 'reg operand' : null, active: !!exec.instruction },
+    { num: 4, name: 'Memory', abbrev: 'MEM', instruction: mem.instruction?.raw ?? null, detail: memDetail, subDetail: mem.instruction ? (mem.controlSignals?.memWrite ? 'WRITE' : mem.controlSignals?.memRead ? 'READ' : 'pass-thru') : null, active: !!mem.instruction },
+    { num: 5, name: 'Write Back', abbrev: 'WB', instruction: wb.instruction?.raw ?? null, detail: wb.decoded?.destReg ? `→ ${wb.decoded.destReg}` : wb.instruction ? '→ REG FILE' : null, subDetail: null, active: !!wb.instruction },
+  ];
+}
+
+function makeStyles(c: AppPalette) {
+  return StyleSheet.create({
+    root: { flex: 1, backgroundColor: c.bg0, paddingVertical: 10, gap: 8 },
+    stagesScroll: { paddingHorizontal: 12, alignItems: 'stretch', gap: 0 },
+    card: { width: 92, minHeight: 90, backgroundColor: c.bg1, borderRadius: 8, borderWidth: 1.5, borderColor: c.border, padding: 8, gap: 4 },
+    cardActive: { borderColor: c.accentBorder, backgroundColor: c.accentBg },
+    cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 5, marginBottom: 2 },
+    numBadge: { width: 18, height: 18, borderRadius: 9, backgroundColor: c.bg3, borderWidth: 1, borderColor: c.border, justifyContent: 'center', alignItems: 'center', marginTop: 1 },
+    numBadgeActive: { backgroundColor: c.accentBg, borderColor: c.accent },
+    numBadgeText: { color: c.textDim, fontSize: 9, fontWeight: '800' },
+    numBadgeTextActive: { color: c.accent },
+    cardName: { color: c.textDim, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
+    cardNameActive: { color: c.accent },
+    cardAbbrev: { color: c.borderSubtle, fontSize: 8, fontWeight: '700', letterSpacing: 0.5 },
+    cardBody: { flex: 1, gap: 2 },
+    instrText: { color: c.textDim, fontSize: 10, fontFamily: 'monospace', lineHeight: 14 },
+    instrTextActive: { color: c.accentCode },
+    detailText: { color: c.amber, fontSize: 9, fontFamily: 'monospace', marginTop: 1 },
+    subDetailText: { color: c.textDim, fontSize: 8, fontFamily: 'monospace' },
+    bubbleRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+    bubbleDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: c.bg3 },
+    bubbleText: { color: c.bg3, fontSize: 9, fontStyle: 'italic' },
+    pipelineArrow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'center', width: 18, marginTop: 0 },
+    arrowLine: { flex: 1, height: 1.5, backgroundColor: c.border },
+    arrowLineActive: { backgroundColor: c.accent },
+    arrowHead: { width: 0, height: 0, borderTopWidth: 4, borderBottomWidth: 4, borderLeftWidth: 6, borderStyle: 'solid', borderTopColor: 'transparent', borderBottomColor: 'transparent', borderLeftColor: c.border },
+    arrowHeadActive: { borderLeftColor: c.accent },
+    divider: { height: 1, backgroundColor: c.borderSubtle, marginHorizontal: 12 },
+    datapathRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12, gap: 0 },
+    block: { width: 64, height: 52, backgroundColor: c.bg2, borderRadius: 6, borderWidth: 1.5, borderColor: c.border, justifyContent: 'center', alignItems: 'center', padding: 4 },
+    blockActive: { borderColor: c.accentBorder, backgroundColor: c.accentBg },
+    blockLabel: { color: c.textDim, fontSize: 9, fontWeight: '700', textAlign: 'center', lineHeight: 13, fontFamily: 'monospace' },
+    blockLabelActive: { color: c.accent },
+    dpArrow: { flexDirection: 'row', alignItems: 'center', width: 20 },
+    wbLabel: { color: c.borderSubtle, fontSize: 9, fontFamily: 'monospace', textAlign: 'center', paddingHorizontal: 12 },
+    wbLabelActive: { color: c.textDim },
+    hazardRow: { flexDirection: 'row', gap: 6, paddingHorizontal: 12, flexWrap: 'wrap' },
+    hazardBadge: { borderRadius: 5, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 3 },
+    hazardRaw: { backgroundColor: c.amberBg, borderColor: c.amberBorder },
+    hazardControl: { backgroundColor: c.orangeBg, borderColor: c.orangeBorder },
+    hazardText: { fontSize: 10, fontWeight: '700', fontFamily: 'monospace' },
+    hazardRawText: { color: c.amber },
+    hazardControlText: { color: c.orange },
+  });
+}
+
+interface Props { pipeline: PipelineState; hazards?: string[] }
+
+export default function VisualizerCanvas({ pipeline, hazards = [] }: Props) {
+  const c = useAppTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
+  const stages = buildStages(pipeline);
+
+  const BLOCKS = [
+    { label: 'INST\nMEM', active: stages[0].active },
+    { label: 'REG\nFILE', active: stages[1].active || stages[4].active },
+    { label: 'ALU', active: stages[2].active },
+    { label: 'DATA\nMEM', active: stages[3].active },
+  ];
+
+  return (
+    <View style={styles.root}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.stagesScroll}>
+        {stages.map((stage, i) => (
+          <React.Fragment key={stage.name}>
+            <View style={[styles.card, stage.active && styles.cardActive]}>
+              <View style={styles.cardHeader}>
+                <View style={[styles.numBadge, stage.active && styles.numBadgeActive]}>
+                  <Text style={[styles.numBadgeText, stage.active && styles.numBadgeTextActive]}>{stage.num}</Text>
+                </View>
+                <View>
+                  <Text style={[styles.cardName, stage.active && styles.cardNameActive]}>{stage.name}</Text>
+                  <Text style={styles.cardAbbrev}>{stage.abbrev}</Text>
+                </View>
+              </View>
+              <View style={styles.cardBody}>
+                {stage.instruction ? (
+                  <>
+                    <Text style={[styles.instrText, stage.active && styles.instrTextActive]} numberOfLines={2}>{stage.instruction}</Text>
+                    {stage.detail && <Text style={styles.detailText} numberOfLines={1}>{stage.detail}</Text>}
+                    {stage.subDetail && <Text style={styles.subDetailText} numberOfLines={1}>{stage.subDetail}</Text>}
+                  </>
+                ) : (
+                  <View style={styles.bubbleRow}>
+                    <View style={styles.bubbleDot} />
+                    <Text style={styles.bubbleText}>bubble</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+            {i < stages.length - 1 && (
+              <View style={styles.pipelineArrow}>
+                <View style={[styles.arrowLine, stage.active && stages[i + 1].active && styles.arrowLineActive]} />
+                <View style={[styles.arrowHead, stage.active && stages[i + 1].active && styles.arrowHeadActive]} />
+              </View>
+            )}
+          </React.Fragment>
+        ))}
+      </ScrollView>
+
+      <View style={styles.divider} />
+
+      <View style={styles.datapathRow}>
+        {BLOCKS.map((b, i) => (
+          <React.Fragment key={b.label}>
+            <View style={[styles.block, b.active && styles.blockActive]}>
+              <Text style={[styles.blockLabel, b.active && styles.blockLabelActive]}>{b.label}</Text>
+            </View>
+            {i < BLOCKS.length - 1 && (
+              <View style={styles.dpArrow}>
+                <View style={[styles.arrowLine, BLOCKS[i + 1].active && styles.arrowLineActive]} />
+                <View style={[styles.arrowHead, BLOCKS[i + 1].active && styles.arrowHeadActive]} />
+              </View>
+            )}
+          </React.Fragment>
+        ))}
+      </View>
+
+      <Text style={[styles.wbLabel, stages[4].active && styles.wbLabelActive]}>
+        ↖ WriteBack: ALU / DATA MEM → REG FILE
+      </Text>
+
+      {hazards.length > 0 && (
+        <View style={styles.hazardRow}>
+          {hazards.map(h => {
+            const isRaw = h.startsWith('RAW');
+            return (
+              <View key={h} style={[styles.hazardBadge, isRaw ? styles.hazardRaw : styles.hazardControl]}>
+                <Text style={[styles.hazardText, isRaw ? styles.hazardRawText : styles.hazardControlText]}>
+                  {isRaw ? `⚠ ${h}` : `⚡ ${h}`}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+}

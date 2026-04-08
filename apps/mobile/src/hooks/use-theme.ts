@@ -3,12 +3,17 @@
  * https://docs.expo.dev/guides/color-schemes/
  */
 
-import { Colors } from '@/constants/theme';
+import { Colors, appPalette } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export function useTheme() {
   const scheme = useColorScheme();
   const theme = scheme === 'unspecified' ? 'light' : scheme;
-
   return Colors[theme];
+}
+
+/** Returns the full PlayARM color palette for the current color scheme. */
+export function useAppTheme() {
+  const scheme = useColorScheme();
+  return appPalette[scheme === 'dark' ? 'dark' : 'light'];
 }
