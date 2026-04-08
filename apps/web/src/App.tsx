@@ -20,14 +20,19 @@ function App() {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Follow system color-scheme on mobile (no stored preference overrides it)
+    // Follow system color-scheme; only override if user has manually toggled
     useEffect(() => {
         if (!isMobile) return;
+        const STORAGE_KEY = 'playarm_theme_v2';
         const mq = window.matchMedia('(prefers-color-scheme: dark)');
-        const stored = localStorage.getItem('theme');
-        if (!stored) applyTheme(mq.matches ? 'dark' : 'light');
+        // Apply immediately on mount when no manual preference is stored
+        if (!localStorage.getItem(STORAGE_KEY)) {
+            applyTheme(mq.matches ? 'dark' : 'light');
+        }
         const handler = (e: MediaQueryListEvent) => {
-            if (!localStorage.getItem('theme')) applyTheme(e.matches ? 'dark' : 'light');
+            if (!localStorage.getItem(STORAGE_KEY)) {
+                applyTheme(e.matches ? 'dark' : 'light');
+            }
         };
         mq.addEventListener('change', handler);
         return () => mq.removeEventListener('change', handler);

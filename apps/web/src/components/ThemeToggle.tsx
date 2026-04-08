@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 
 type Theme = "dark" | "light";
 
+// v2 key — ignores stale "theme" values written by old code that always defaulted to dark
+const STORAGE_KEY = "playarm_theme_v2";
+
 export function applyTheme(theme: Theme) {
     document.documentElement.dataset.theme = theme;
     document.body.classList.toggle("dark", theme === "dark");
@@ -13,19 +16,25 @@ function systemTheme(): Theme {
 
 export default function ThemeToggle() {
     const [theme, setTheme] = useState<Theme>(() => {
-        const saved = localStorage.getItem("theme");
+        const saved = localStorage.getItem(STORAGE_KEY);
         return (saved === "light" || saved === "dark") ? (saved as Theme) : systemTheme();
     });
 
     useEffect(() => {
         applyTheme(theme);
-        localStorage.setItem("theme", theme);
+        // Do NOT auto-save here — only manual toggles are persisted (see onClick)
     }, [theme]);
+
+    function toggle() {
+        const next: Theme = theme === "dark" ? "light" : "dark";
+        localStorage.setItem(STORAGE_KEY, next);
+        setTheme(next);
+    }
 
     return (
         <button
             className="theme-icon-toggle"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            onClick={toggle}
             title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
             type="button"
         >
