@@ -19,6 +19,7 @@ import { InstructionRefCard } from './InstructionRefCard';
 import { PseudocodePanel } from './PseudocodePanel';
 import { ExerciseMode } from './ExerciseMode';
 import { CallingConventionViz } from './CallingConventionViz';
+import { AIAssistant } from './AIAssistant';
 
 interface TraceEntry {
     cycle: number;
@@ -768,6 +769,14 @@ export const PipelineVisualizer = ({ user }: PipelineVisualizerProps) => {
                 accept=".s,.asm,.txt"
                 style={{ display: 'none' }}
                 onChange={handleFileLoad}
+            />
+
+            <AIAssistant
+                cpuState={{ pc, registers, memory, flags, pipeline, clock: cycle }}
+                assemblySource={instruction}
+                instructions={parsedInst}
+                traceLog={traceLog}
+                isDone={isDone}
             />
         </div>
     );

@@ -815,6 +815,25 @@ h3::after {
   filter: drop-shadow(0 0 8px var(--accent-glow));
 }
 
+/* Arrow labels in the pipeline SVG diagram */
+.arrow-label {
+  font-size: 7px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  fill: var(--text-secondary);
+  text-anchor: middle;
+  dominant-baseline: auto;
+  /* Paint the stroke first so the label punches through overlapping lines */
+  paint-order: stroke fill;
+  stroke: var(--panel-bg, #0d1117);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+:root[data-theme="light"] .arrow-label {
+  stroke: #ffffff;
+}
+
 .offline-warning {
   background: rgba(210, 153, 34, 0.1);
   color: var(--warning-color);
