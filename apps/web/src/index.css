@@ -815,15 +815,101 @@ h3::after {
   filter: drop-shadow(0 0 8px var(--accent-glow));
 }
 
-/* Arrow labels in the pipeline SVG diagram */
+/* ── Pipeline diagram SVG styles ──────────────────────────────────────────── */
+
+/* Datapath block — filled rectangle */
+.dp-block {
+  fill: var(--viz-block);
+  stroke: var(--viz-stroke);
+  stroke-width: 1.5;
+  transition: stroke 0.2s, filter 0.2s;
+}
+.dp-block--active {
+  stroke: var(--accent-color);
+  stroke-width: 2;
+  filter: url(#block-glow);
+}
+
+/* Block text label */
+.dp-label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--text-secondary);
+  pointer-events: none;
+}
+.dp-label--active {
+  fill: var(--accent-color);
+}
+
+/* Small monospace detail inside the ALU block */
+.dp-detail {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  fill: var(--text-secondary);
+  pointer-events: none;
+}
+
+/* Pipeline register double-bar */
+.pipe-reg-bar {
+  fill: var(--viz-stroke);
+  opacity: 0.7;
+}
+
+/* Pipeline register name below the bar (IF/ID, ID/EX …) */
+.pipe-reg-label {
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  fill: var(--text-secondary);
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+/* Stage progress dot */
+.stage-dot {
+  fill: var(--viz-stage-inactive);
+  stroke: var(--viz-stroke);
+  stroke-width: 2;
+  transition: fill 0.2s, stroke 0.2s;
+}
+.stage-dot--active {
+  fill: var(--accent-color);
+  stroke: var(--accent-color);
+  filter: drop-shadow(0 0 6px var(--accent-glow));
+}
+
+/* Stage name label below dot */
+.stage-dot-label {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  fill: var(--text-secondary);
+  pointer-events: none;
+}
+.stage-dot-label--active {
+  fill: var(--accent-color);
+  font-weight: 700;
+}
+
+/* Small chip badge above HDU / FWD blocks */
+.block-badge {
+  font-family: var(--font-sans);
+  font-size: 8px;
+  font-weight: 700;
+  fill: var(--accent-color);
+  letter-spacing: 0.06em;
+  pointer-events: none;
+}
+
+/* Arrow labels — halo stroke makes them legible over crossing lines */
 .arrow-label {
-  font-size: 8.5px;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 500;
   fill: var(--text-secondary);
   dominant-baseline: middle;
-  /* Halo stroke renders behind fill so the label is legible over crossing lines */
   paint-order: stroke fill;
-  stroke: var(--panel-bg, #0d1117);
+  stroke: var(--viz-bg, #010409);
   stroke-width: 4px;
   stroke-linejoin: round;
   pointer-events: none;
@@ -831,7 +917,7 @@ h3::after {
 }
 
 :root[data-theme="light"] .arrow-label {
-  stroke: #f6f8fa;
+  stroke: var(--viz-bg, #f1f5fb);
 }
 
 .offline-warning {
