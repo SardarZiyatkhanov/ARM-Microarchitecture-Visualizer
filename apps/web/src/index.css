@@ -817,21 +817,21 @@ h3::after {
 
 /* Arrow labels in the pipeline SVG diagram */
 .arrow-label {
-  font-size: 7px;
+  font-size: 8.5px;
   font-family: 'Plus Jakarta Sans', sans-serif;
   fill: var(--text-secondary);
-  text-anchor: middle;
-  dominant-baseline: auto;
-  /* Paint the stroke first so the label punches through overlapping lines */
+  dominant-baseline: middle;
+  /* Halo stroke renders behind fill so the label is legible over crossing lines */
   paint-order: stroke fill;
   stroke: var(--panel-bg, #0d1117);
-  stroke-width: 3px;
+  stroke-width: 4px;
   stroke-linejoin: round;
   pointer-events: none;
+  letter-spacing: 0.01em;
 }
 
 :root[data-theme="light"] .arrow-label {
-  stroke: #ffffff;
+  stroke: #f6f8fa;
 }
 
 .offline-warning {
