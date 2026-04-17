@@ -87,7 +87,7 @@ export const TLBVisualizer: React.FC<TLBVisualizerProps> = ({ tlbState, lastAcce
                                 </tr>
                             </thead>
                             <tbody>
-                                {entries.map((entry, i) => {
+                                {entries.map((entry: any, i: number) => {
                                     const isHighlighted = lastAccess &&
                                         entry.valid && entry.vpn === lastAccess.vpn;
                                     return (
@@ -160,7 +160,7 @@ export const TLBVisualizer: React.FC<TLBVisualizerProps> = ({ tlbState, lastAcce
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', maxHeight: '140px', overflowY: 'auto' }}>
                             {Object.keys(pageTable).length === 0
                                 ? <div style={{ fontSize: '0.72rem', opacity: 0.4, fontStyle: 'italic' }}>Empty</div>
-                                : Object.values(pageTable).map(pte => (
+                                : Object.values(pageTable).map((pte: any) => (
                                     <div key={pte.vpn} style={{
                                         display: 'flex', gap: '0.5rem', alignItems: 'center',
                                         fontSize: '0.7rem', fontFamily: 'monospace',

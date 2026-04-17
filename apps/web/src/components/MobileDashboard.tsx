@@ -65,7 +65,7 @@ function initCpu(): CpuState {
 }
 
 function allEmpty(cpu: CpuState): boolean {
-  return Object.values(cpu.pipeline).every(s => s.instruction === null);
+  return Object.values(cpu.pipeline).every((s: any) => s.instruction === null);
 }
 
 function hex(n: number): string {
@@ -302,7 +302,7 @@ export default function MobileDashboard({ user }: { user: User | null }) {
             </div>
             {hasErrors && (
               <div className="mdb-errors">
-                {parsed.errors.map((e, i) => (
+                {parsed.errors.map((e: any, i: number) => (
                   <div key={i} className="mdb-error">
                     <span className="mdb-error-ln">Line {e.line}</span>
                     <span className="mdb-error-msg">{e.message}</span>

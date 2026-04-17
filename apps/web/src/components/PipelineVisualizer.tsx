@@ -8,8 +8,9 @@ import { INITIAL_REGISTERS, INITIAL_PIPELINE_STATE, INITIAL_FLAGS, CpuState } fr
 import { advancePipeline } from '@playarm/core';
 import { isFirebaseInitialized } from '../firebase';
 import { saveProgram, listPrograms, Program, deleteProgram, updateProgram } from '../services/firestoreService';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import { createEmptyTLB, translateAddress, TLBState, MemoryAccessResult } from '@playarm/core';
 import { TLBVisualizer } from './TLBVisualizer';
 import { StackPanel } from './StackPanel';
@@ -36,6 +37,8 @@ const SPEED_OPTIONS = [
 
 interface PipelineVisualizerProps {
     user?: User | null;
+    nickname?: string | null;
+    needsNickname?: boolean;
 }
 
 const DEFAULT_PROGRAM = 'MOV R0, #10\nMOV R1, #0\nLOOP:\nADD R1, R1, #1\nCMP R1, R0\nBNE LOOP\nSTR R1, [R2]';
@@ -49,7 +52,39 @@ function getProgramFromUrl(): string {
     }
 }
 
-export const PipelineVisualizer = ({ user }: PipelineVisualizerProps) => {
+export const PipelineVisualizer = ({ user, nickname: initialNickname, needsNickname: initialNeedsNickname }: PipelineVisualizerProps) => {
+    const [nickname, setNickname] = useState<string | null>(initialNickname ?? null);
+    const [needsNickname, setNeedsNickname] = useState(initialNeedsNickname ?? false);
+    const [tempNickname, setTempNickname] = useState('');
+    const [nicknameError, setNicknameError] = useState('');
+    const [nicknameSaving, setNicknameSaving] = useState(false);
+
+    // Sync if parent re-fetches
+    useEffect(() => { setNickname(initialNickname ?? null); }, [initialNickname]);
+    useEffect(() => { setNeedsNickname(initialNeedsNickname ?? false); }, [initialNeedsNickname]);
+
+    const saveNicknameToFirestore = async () => {
+        const regex = /^[a-zA-Z0-9_]{2,20}$/;
+        if (!regex.test(tempNickname)) {
+            setNicknameError('2–20 chars: letters, numbers, or underscores only.');
+            return;
+        }
+        if (!user) return;
+        setNicknameSaving(true);
+        try {
+            await setDoc(doc(db, 'users', user.uid), {
+                nickname: tempNickname,
+                email: user.email,
+                createdAt: new Date(),
+            });
+            setNickname(tempNickname);
+            setNeedsNickname(false);
+        } catch (err: any) {
+            setNicknameError(err.message ?? 'Failed to save nickname.');
+        } finally {
+            setNicknameSaving(false);
+        }
+    };
     const [programTitle, setProgramTitle] = useState('ARM Simulator Demo');
     const [instruction, setInstruction] = useState(getProgramFromUrl)
     const [isPlaying, setIsPlaying] = useState(false)
@@ -443,7 +478,7 @@ export const PipelineVisualizer = ({ user }: PipelineVisualizerProps) => {
                                 }
                                 setShowUserMenu(v => !v);
                             }}
-                            title={user?.isAnonymous ? 'Guest' : (user?.displayName ?? user?.email ?? 'User')}
+                            title={user?.isAnonymous ? 'Guest' : (nickname ?? user?.displayName ?? user?.email ?? 'User')}
                         >
                             {user?.photoURL ? (
                                 <img src={user.photoURL} alt="avatar" style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover' }} />
@@ -461,7 +496,7 @@ export const PipelineVisualizer = ({ user }: PipelineVisualizerProps) => {
                                         <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Signed in as Guest</p>
                                     ) : (
                                         <>
-                                            <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#f1f5f9' }}>{user?.displayName ?? 'User'}</p>
+                                            <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#f1f5f9' }}>{nickname ?? user?.displayName ?? 'User'}</p>
                                             <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email}</p>
                                         </>
                                     )}
@@ -622,7 +657,7 @@ export const PipelineVisualizer = ({ user }: PipelineVisualizerProps) => {
                         <div className="signals-grid">
                             {currentSignals ? Object.entries(currentSignals).map(([sig, val]) => (
                                 <div key={sig} className={`signal-tag ${val ? 'active' : ''}`}>
-                                    {sig}: {val.toString()}
+                                    {sig}: {String(val)}
                                 </div>
                             )) : <div className="text-muted">No active instruction in Decode</div>}
                         </div>
@@ -778,6 +813,36 @@ export const PipelineVisualizer = ({ user }: PipelineVisualizerProps) => {
                 traceLog={traceLog}
                 isDone={isDone}
             />
+            {/* ── Nickname prompt overlay for legacy / OAuth users ── */}
+            {needsNickname && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
+                    <div style={{ background: '#1e293b', borderRadius: '14px', padding: '2rem', width: '100%', maxWidth: '360px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', color: 'white', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '1.75rem', fontWeight: 800, background: 'linear-gradient(135deg,#60a5fa,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Welcome to PlayARM!</div>
+                            <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginTop: '0.4rem' }}>Please choose a nickname to continue.</p>
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Nickname (2-20 chars, a-z, 0-9, _)"
+                            value={tempNickname}
+                            onChange={(e) => { setTempNickname(e.target.value); setNicknameError(''); }}
+                            onKeyDown={(e) => e.key === 'Enter' && saveNicknameToFirestore()}
+                            style={{ padding: '11px 12px', borderRadius: '6px', border: `1px solid ${nicknameError ? '#ef4444' : '#334155'}`, background: '#0f172a', color: 'white', fontSize: '14px', outline: 'none', width: '100%', boxSizing: 'border-box' }}
+                            autoFocus
+                        />
+                        {nicknameError && (
+                            <p style={{ color: '#ef4444', fontSize: '12px', margin: 0 }}>{nicknameError}</p>
+                        )}
+                        <button
+                            onClick={saveNicknameToFirestore}
+                            disabled={nicknameSaving || tempNickname.length < 2}
+                            style={{ padding: '12px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 700, cursor: nicknameSaving ? 'not-allowed' : 'pointer', opacity: nicknameSaving ? 0.7 : 1, transition: 'opacity 0.2s' }}
+                        >
+                            {nicknameSaving ? 'Saving…' : 'Set Nickname'}
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

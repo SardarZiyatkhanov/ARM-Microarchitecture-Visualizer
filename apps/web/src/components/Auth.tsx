@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
@@ -9,6 +9,7 @@ import {
     GithubAuthProvider,
     signInWithPopup,
 } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 const googleProvider = new GoogleAuthProvider();
 const githubProvider = new GithubAuthProvider();
@@ -19,10 +20,16 @@ const Auth: React.FC = () => {
     const [view, setView] = useState<View>('login');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [nickname, setNickname] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [info, setInfo] = useState('');
     const [loading, setLoading] = useState(false);
+
+    const validateNickname = (name: string) => {
+        const regex = /^[a-zA-Z0-9_]{2,20}$/;
+        return regex.test(name);
+    };
 
     const reset = (nextView: View) => {
         setError('');
@@ -38,7 +45,18 @@ const Auth: React.FC = () => {
             if (view === 'login') {
                 await signInWithEmailAndPassword(auth, email, password);
             } else {
-                await createUserWithEmailAndPassword(auth, email, password);
+                if (!validateNickname(nickname)) {
+                    setError('Nickname must be 2–20 characters: letters, numbers, or underscores.');
+                    setLoading(false);
+                    return;
+                }
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                await setDoc(doc(db, 'users', user.uid), {
+                    nickname,
+                    email: user.email,
+                    createdAt: new Date(),
+                });
             }
         } catch (err: any) {
             setError(err.message || 'Authentication error');
@@ -206,6 +224,16 @@ const Auth: React.FC = () => {
 
                         {/* ── Email / Password form ── */}
                         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+                            {view === 'signup' && (
+                                <input
+                                    type="text"
+                                    placeholder="Nickname (2-20 chars, a-z, 0-9, _)"
+                                    value={nickname}
+                                    onChange={(e) => setNickname(e.target.value)}
+                                    required
+                                    style={inputStyle}
+                                />
+                            )}
                             <input
                                 type="email"
                                 placeholder="Email Address"

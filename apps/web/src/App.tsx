@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from './firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from './firebase';
 import Auth from './components/Auth';
 import MobileDashboard from './components/MobileDashboard';
 import PipelineVisualizer from './components/PipelineVisualizer';
@@ -12,6 +13,8 @@ function App() {
 
     // Auth state (desktop only)
     const [user, setUser] = useState<User | null>(null);
+    const [nickname, setNickname] = useState<string | null>(null);
+    const [needsNickname, setNeedsNickname] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -39,7 +42,20 @@ function App() {
     }, [isMobile]);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (currentUser) {
+                const docSnap = await getDoc(doc(db, 'users', currentUser.uid));
+                if (docSnap.exists()) {
+                    setNickname(docSnap.data().nickname ?? null);
+                    setNeedsNickname(false);
+                } else {
+                    setNickname(null);
+                    setNeedsNickname(true);
+                }
+            } else {
+                setNickname(null);
+                setNeedsNickname(false);
+            }
             setUser(currentUser);
             setLoading(false);
         });
@@ -64,7 +80,7 @@ function App() {
         return <Auth />;
     }
 
-    return <PipelineVisualizer user={user} />;
+    return <PipelineVisualizer user={user} nickname={nickname} needsNickname={needsNickname} />;
 }
 
 export default App;
