@@ -1,0 +1,14 @@
+﻿src/components/AIAssistant.tsx(2,44): error TS2307: Cannot find module '@playarm/core' or its corresponding type declarations.
+src/components/InstructionInput.tsx(2,41): error TS2307: Cannot find module '@playarm/core' or its corresponding type declarations.
+src/components/MobileDashboard.tsx(6,8): error TS2307: Cannot find module '@playarm/core' or its corresponding type declarations.
+src/components/PipelineVisualizer.tsx(4,31): error TS2307: Cannot find module '@playarm/core' or its corresponding type declarations.
+src/components/PipelineVisualizer.tsx(7,84): error TS2307: Cannot find module '@playarm/core' or its corresponding type declarations.
+src/components/PipelineVisualizer.tsx(8,33): error TS2307: Cannot find module '@playarm/core' or its corresponding type declarations.
+src/components/PipelineVisualizer.tsx(14,80): error TS2307: Cannot find module '@playarm/core' or its corresponding type declarations.
+src/components/StackPanel.tsx(1,35): error TS2307: Cannot find module '@playarm/core' or its corresponding type declarations.
+src/components/TLBVisualizer.tsx(2,47): error TS2307: Cannot find module '@playarm/core' or its corresponding type declarations.
+src/components/TLBVisualizer.tsx(6,24): error TS2307: Cannot find module '@playarm/core' or its corresponding type declarations.
+src/components/VisualizerCanvas.tsx(2,41): error TS2307: Cannot find module '@playarm/core' or its corresponding type declarations.
+src/lib/aiContext.ts(1,44): error TS2307: Cannot find module '@playarm/core' or its corresponding type declarations.
+src/services/firestoreService.ts(55,22): error TS2307: Cannot find module '@playarm/core' or its corresponding type declarations.
+src/services/firestoreService.ts(58,19): error TS2307: Cannot find module '@playarm/core' or its corresponding type declarations.
