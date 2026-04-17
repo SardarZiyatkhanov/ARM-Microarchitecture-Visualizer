@@ -1,5 +1,9 @@
 {
     "compilerOptions": {
+        "baseUrl": ".",
+        "paths": {
+            "@playarm/core": ["../../packages/core/src"]
+        },
         "target": "ES2020",
         "useDefineForClassFields": true,
         "lib": [
