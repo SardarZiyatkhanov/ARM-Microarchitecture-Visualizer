@@ -12,13 +12,25 @@ const firebaseConfig = {
     measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-const app = initializeApp(firebaseConfig);
+// Check if we have real configured keys (not placeholder 'your_api_key')
+export const isFirebaseInitialized = !!firebaseConfig.apiKey && firebaseConfig.apiKey !== 'your_api_key';
 
-// Force long polling — fixes WebSocket blocks on university/corporate networks
-export const db = initializeFirestore(app, {
-    experimentalForceLongPolling: true
-});
+let app: any;
+let db: any;
+let auth: any;
 
-export const auth = getAuth(app);
+if (isFirebaseInitialized) {
+    app = initializeApp(firebaseConfig);
+    // Force long polling — fixes WebSocket blocks on university/corporate networks
+    db = initializeFirestore(app, {
+        experimentalForceLongPolling: true
+    });
+    auth = getAuth(app);
+} else {
+    // Provide safe fallbacks so module export doesn't crash React!
+    app = null;
+    db = null;
+    auth = null;
+}
 
-export const isFirebaseInitialized = !!firebaseConfig.apiKey;
+export { app, db, auth };

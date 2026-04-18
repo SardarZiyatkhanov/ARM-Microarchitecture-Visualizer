@@ -35,6 +35,14 @@
   <!-- Preconnect to Firebase -->
   <link rel="preconnect" href="https://firestore.googleapis.com" />
   <link rel="preconnect" href="https://identitytoolkit.googleapis.com" />
+  <script>
+    window.addEventListener('error', (event) => {
+      document.body.innerHTML += '<div style="color:red;z-index:9999;position:relative;">Global Error: ' + event.message + '</div>';
+    });
+    window.addEventListener('unhandledrejection', (event) => {
+      document.body.innerHTML += '<div style="color:red;z-index:9999;position:relative;">Promise Error: ' + (event.reason ? event.reason.message || event.reason : 'unknown') + '</div>';
+    });
+  </script>
 </head>
 
 <body>

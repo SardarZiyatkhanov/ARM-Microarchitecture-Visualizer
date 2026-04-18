@@ -42,6 +42,11 @@ function App() {
     }, [isMobile]);
 
     useEffect(() => {
+        if (!auth) {
+            setLoading(false);
+            return;
+        }
+        
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 const docSnap = await getDoc(doc(db, 'users', currentUser.uid));
@@ -61,6 +66,12 @@ function App() {
         });
         return () => unsubscribe();
     }, []);
+
+    // ── Temporary localhost-only test route ─────────────────────────────────
+    if (window.location.pathname === '/pipeline-test') {
+        const dummyUser = { uid: 'test-uid', email: 'test@localhost' } as User;
+        return <PipelineVisualizer user={dummyUser} nickname="TestUser" needsNickname={false} />;
+    }
 
     // ── Mobile: no auth gate — user prop enables optional sign-in ───────────
     if (isMobile) {
