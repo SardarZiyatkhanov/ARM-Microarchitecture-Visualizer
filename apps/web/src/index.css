@@ -35,9 +35,9 @@
   --panel-bg: #ffffff;
   --glass-bg: rgba(255, 255, 255, 0.88);
 
-  /* Canvas — stronger contrast so blocks are clearly visible */
-  --viz-bg: #f1f5fb;
-  --viz-block: #dbe4f5;
+  /* Canvas — darker background so white blocks pop clearly */
+  --viz-bg: #dde4f2;
+  --viz-block: #ffffff;
   --viz-line: rgba(51, 65, 85, 0.50);
   --viz-stage-inactive: #c8d3e8;
   --viz-stroke: #4b5680;
@@ -306,6 +306,13 @@ body {
   padding: 1.25rem;
 }
 
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 1rem 1.25rem 1.5rem;
+}
+
 .header {
   display: flex;
   align-items: center;
@@ -535,11 +542,11 @@ body {
 
 .main-content {
   display: grid;
-  grid-template-columns: 410px 1fr 300px;
-  gap: 1.25rem;
+  grid-template-columns: 400px 1fr 310px;
+  gap: 1.5rem;
   flex: 1;
   min-height: 0;
-  margin-top: 1.25rem;
+  margin-top: 1.5rem;
 }
 
 .panel {
@@ -574,34 +581,36 @@ h3::after {
   background: var(--border-color);
 }
 
-/* Visualization Panel */
+/* Visualization Panel — background is painted by the SVG container itself */
 .viz-panel {
   padding: 0;
-  background: var(--viz-bg);
+  background: transparent;
+  overflow: hidden;
 }
 
 .control-signals-panel {
-  padding: 1.25rem;
+  padding: 1.1rem 1.25rem;
   border-top: 1px solid var(--border-color);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.015);
 }
 
 .signals-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.6rem;
 }
 
 .signal-tag {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
-  padding: 0.4rem 0.6rem;
+  font-size: 0.68rem;
+  padding: 0.38rem 0.65rem;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 7px;
   color: var(--text-secondary);
   display: flex;
   justify-content: space-between;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
 }
 
 .signal-tag.active {
@@ -817,107 +826,18 @@ h3::after {
 
 /* ── Pipeline diagram SVG styles ──────────────────────────────────────────── */
 
-/* Datapath block rectangle */
-.dp-block {
-  fill: var(--viz-block);
-  stroke: var(--viz-stroke);
-  stroke-width: 1.5;
-  transition: stroke 0.25s ease, filter 0.25s ease;
-}
-.dp-block--active {
-  stroke: var(--accent-color);
-  stroke-width: 2.5;
-  filter: url(#blk-glow);
+/* Visualization Panel — subtle inner shadow for depth */
+.viz-panel {
+  padding: 0;
+  background: var(--viz-bg);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 8px 32px rgba(0,0,0,0.5);
 }
 
-/* Block text label */
-.dp-label {
-  font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 600;
-  fill: var(--text-secondary);
-  pointer-events: none;
-  transition: fill 0.2s;
-}
-.dp-label--active {
-  fill: var(--accent-color);
-}
-
-/* Small monospace ALU detail */
-.dp-detail {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  fill: var(--text-secondary);
-  pointer-events: none;
-}
-
-/* Pipeline register double-bar */
-.pipe-reg-bar {
-  fill: var(--viz-stroke);
-  opacity: 0.65;
-}
-
-/* Pipeline register name (IF/ID, ID/EX …) */
-.pipe-reg-label {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  fill: var(--text-secondary);
-  opacity: 0.75;
-  pointer-events: none;
-}
-
-/* Stage progress dot */
-.stage-dot {
-  fill: var(--viz-stage-inactive);
-  stroke: var(--viz-stroke);
-  stroke-width: 2;
-  transition: fill 0.2s, stroke 0.2s, filter 0.2s;
-}
-.stage-dot--active {
-  fill: var(--accent-color);
-  stroke: var(--accent-color);
-  filter: drop-shadow(0 0 7px var(--accent-glow));
-}
-
-/* Stage name label */
-.stage-dot-label {
-  font-family: var(--font-sans);
-  font-size: 10.5px;
-  font-weight: 500;
-  fill: var(--text-secondary);
-  pointer-events: none;
-}
-.stage-dot-label--active {
-  fill: var(--accent-color);
-  font-weight: 700;
-}
-
-/* HDU / FWD chip badge */
-.block-badge {
-  font-family: var(--font-sans);
-  font-size: 8.5px;
-  font-weight: 700;
-  fill: var(--accent-color);
-  letter-spacing: 0.07em;
-  pointer-events: none;
-}
-
-/* Arrow labels — 4 px halo stroke punches through overlapping lines */
-.arrow-label {
-  font-family: var(--font-sans);
-  font-size: 9.5px;
-  font-weight: 500;
-  fill: var(--text-secondary);
-  dominant-baseline: middle;
-  paint-order: stroke fill;
-  stroke: var(--viz-bg, #010409);
-  stroke-width: 4px;
-  stroke-linejoin: round;
-  pointer-events: none;
-}
-
-:root[data-theme="light"] .arrow-label {
-  stroke: var(--viz-bg, #f1f5fb);
+/* All SVG text and primitives are handled via inline props in VisualizerCanvas.
+   Keep only the microarch-container and canvas-level reset here. */
+.microarch-container {
+  display: block;
+  width: 100%;
 }
 
 .offline-warning {
@@ -1273,31 +1193,34 @@ h3::after {
 .pipeline-activity {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 0.75rem;
-  margin-top: 1.25rem;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
 }
 
 .stage-card {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 0.75rem;
-  transition: all 0.3s ease;
+  border-radius: 10px;
+  padding: 0.7rem 0.65rem;
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-height: 68px;
 }
 
 .stage-card.active {
-  background: rgba(47, 129, 247, 0.05);
+  background: rgba(47, 129, 247, 0.07);
   border-color: var(--accent-color);
-  box-shadow: 0 4px 12px var(--accent-glow);
+  box-shadow: 0 0 0 1px var(--accent-color), 0 4px 16px var(--accent-glow);
 }
 
 .stage-name {
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   font-weight: 700;
   color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.5rem;
+  letter-spacing: 0.06em;
   display: block;
 }
 
@@ -1307,24 +1230,26 @@ h3::after {
 
 .stage-inst {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 0.4rem;
   display: block;
 }
 
 .stage-data {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.66rem;
   color: var(--text-secondary);
-  line-height: 1.4;
+  line-height: 1.45;
+  margin-top: 0.1rem;
 }
 
 .stage-data strong {
   color: var(--accent-color);
+  font-weight: 600;
 }
 
 .footer-controls {

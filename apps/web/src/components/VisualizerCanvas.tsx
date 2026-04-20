@@ -6,499 +6,550 @@ interface VisualizerCanvasProps {
     cpuState?: CpuState;
 }
 
-// ── Design constants (in a 700 × 480 design canvas) ───────────────────────────
-// All positions are fractions; actual px = fraction × measured container size.
-const D = { w: 700, h: 480 } as const;
+// ─── Fixed canvas dimensions ───────────────────────────────────────────────────
+// 920 × 420 gives a comfortable 2.19:1 ratio for the horizontal pipeline layout.
+// All geometry is expressed as fractions of these dimensions so the diagram
+// scales proportionally to any container width.
+const DW = 920;
+const DH = 420;
 
-// Vertical fractions
+// ─── Block geometry ────────────────────────────────────────────────────────────
+// 5 equal-width blocks (120 px) with 40 px gaps, centred in the 920 px canvas.
+// Left margin = (920 − 5×120 − 4×40) / 2 = (920 − 760) / 2 = 80 px
+const BLOCK_W = 120;
+const GAP_W   = 40;
+const LEFT_M  = 80;
+
+function bx(i: number) {
+    const l = LEFT_M + i * (BLOCK_W + GAP_W);
+    return { l: l / DW, r: (l + BLOCK_W) / DW, cx: (l + BLOCK_W / 2) / DW };
+}
+const BLOCKS = [0, 1, 2, 3, 4].map(bx);
+
+// ─── Vertical layout (px, then converted to fractions of DH) ──────────────────
+// 28 ─ stage chips
+// 50 ─ stage labels
+// 74 ─ HDU box top         (46 px tall → bottom at 120)
+// 138 ─ main blocks top     (108 px tall → bottom at 246)
+// 264 ─ wb-feedback rows
+// 294 ─ FWD box top         (46 px tall → bottom at 340)
+// 358 ─ bottom margin ~62 px
 const V = {
-    dotCY: 32 / D.h,   // stage dot centre-y
-    dotLblY: 52 / D.h,   // stage dot label
-    hduTop: 76 / D.h,   // HDU top
-    hduH: 48 / D.h,
-    blkTop: 148 / D.h,   // main blocks top
-    blkH: 100 / D.h,
-    wbRoute1: 268 / D.h,   // first WB elbow (ALU WB)
-    wbRoute2: 285 / D.h,   // second WB elbow (MEM WB)
-    fwdTop: 318 / D.h,   // FWD top
-    fwdH: 46 / D.h,
+    chipCY:   28  / DH,
+    chipLbl:  50  / DH,
+    hduTop:   74  / DH,
+    hduH:     46  / DH,
+    blkTop:   138 / DH,
+    blkH:     108 / DH,
+    wbRow1:   264 / DH,
+    wbRow2:   280 / DH,
+    fwdTop:   298 / DH,
+    fwdH:     46  / DH,
 };
 
-// Horizontal fractions
-const H = {
-    imLeft: 0.04, imRight: 0.20,   // INST MEM
-    rfLeft: 0.24, rfRight: 0.41,   // REG FILE
-    alLeft: 0.47, alRight: 0.60,   // ALU
-    dmLeft: 0.65, dmRight: 0.82,   // DATA MEM
-    wbDotX: 0.92,                   // WriteBack dot
+// ─── Colour palettes ───────────────────────────────────────────────────────────
+// CSS custom properties cannot reach SVG <linearGradient> stops, so colours are
+// hard-coded per theme.
+type Pal = {
+    bg:          string;
+    blkFill:     string; blkStroke:    string;
+    blkFillA:    string; blkStrokeA:   string;
+    blkTxt:      string; blkTxtA:      string;
+    blkDetail:   string;
+    ctrlFill:    string; ctrlStroke:   string;
+    ctrlFillA:   string; ctrlStrokeA:  string;
+    ctrlTxt:     string; ctrlTxtA:     string;
+    ctrlBadge:   string;
+    arrow:       string; arrowA:       string;
+    prBar:       string; prLbl:        string;
+    chipFill:    string; chipStroke:   string;
+    chipFillA:   string; chipFillDone: string;
+    chipNum:     string; chipNumDone:  string;
+    chipLbl:     string; chipLblA:     string;
+    trackBg:     string; trackFg:      string;
+    pillBg:      string; pillStroke:   string; pillTxt: string;
+    statBg:      string; statStroke:   string; statTxt: string;
+    gT: string; gB: string; gTA: string; gBA: string; gCT: string; gCB: string;
 };
 
-// ── Small helper components ────────────────────────────────────────────────────
-
-const Rect: React.FC<{
-    x: number; y: number; w: number; h: number;
-    active: boolean; rx?: number;
-}> = ({ x, y, w, h, active, rx = 7 }) => (
-    <rect
-        x={x} y={y} width={w} height={h} rx={rx} ry={rx}
-        className={active ? 'dp-block dp-block--active' : 'dp-block'}
-    />
-);
-
-const BlockLabel: React.FC<{
-    cx: number; cy: number; lines: string[]; active: boolean; detail?: string;
-}> = ({ cx, cy, lines, active, detail }) => {
-    const lineH = 15;
-    const totalH = lines.length * lineH;
-    const startY = detail ? cy - totalH / 2 - 7 : cy - totalH / 2 + lineH / 2;
-    return (
-        <>
-            {lines.map((l, i) => (
-                <text
-                    key={i}
-                    x={cx} y={startY + i * lineH}
-                    className={active ? 'dp-label dp-label--active' : 'dp-label'}
-                    textAnchor="middle" dominantBaseline="middle"
-                >{l}</text>
-            ))}
-            {detail && (
-                <text x={cx} y={cy + totalH / 2 + 4}
-                    className="dp-detail" textAnchor="middle" dominantBaseline="middle"
-                >{detail}</text>
-            )}
-        </>
-    );
+const DARK: Pal = {
+    bg:         '#040a14',
+    blkFill:    '#0f1929',    blkStroke:   '#28405e',
+    blkFillA:   '#0c2145',    blkStrokeA:  '#3b82f6',
+    blkTxt:     '#a0bcd8',    blkTxtA:     '#93c5fd',
+    blkDetail:  '#60a5fa',
+    ctrlFill:   '#090f1a',    ctrlStroke:  '#1e2f44',
+    ctrlFillA:  '#0c2145',    ctrlStrokeA: '#3b82f6',
+    ctrlTxt:    '#4b6a8a',    ctrlTxtA:    '#60a5fa',
+    ctrlBadge:  '#3b82f6',
+    arrow:      'rgba(80,130,200,0.32)',  arrowA: '#3b82f6',
+    prBar:      '#2c3f5c',    prLbl:       '#3d5473',
+    chipFill:   '#101d30',    chipStroke:  '#2c3f5c',
+    chipFillA:  '#2563eb',    chipFillDone:'#1d4ed8',
+    chipNum:    '#3d5473',    chipNumDone: '#fff',
+    chipLbl:    '#3d5473',    chipLblA:    '#93c5fd',
+    trackBg:    'rgba(44,63,92,0.5)',   trackFg: 'rgba(59,130,246,0.4)',
+    pillBg:     '#040d1e',    pillStroke:  '#2563eb',   pillTxt:   '#93c5fd',
+    statBg:     '#061226',    statStroke:  '#2563eb',   statTxt:   '#93c5fd',
+    gT:'#131f30', gB:'#0b1320', gTA:'#102040', gBA:'#08172e', gCT:'#0c1520', gCB:'#07101a',
 };
 
-const PipeReg: React.FC<{ x: number; top: number; h: number; label: string }> = ({ x, top, h, label }) => (
-    <g>
-        <rect x={x} y={top} width={3} height={h} className="pipe-reg-bar" />
-        <rect x={x + 5} y={top} width={3} height={h} className="pipe-reg-bar" />
-        <text x={x + 4} y={top + h + 13} className="pipe-reg-label" textAnchor="middle">{label}</text>
-    </g>
-);
+const LIGHT: Pal = {
+    bg:         '#cbd6ea',
+    blkFill:    '#ffffff',    blkStroke:   '#7ba0c8',
+    blkFillA:   '#dbeafe',    blkStrokeA:  '#4f46e5',
+    blkTxt:     '#1e3a5f',    blkTxtA:     '#312e81',   // dark for contrast
+    blkDetail:  '#4f46e5',
+    ctrlFill:   '#eff4fd',    ctrlStroke:  '#94aed4',
+    ctrlFillA:  '#dbeafe',    ctrlStrokeA: '#4f46e5',
+    ctrlTxt:    '#4b6b9a',    ctrlTxtA:    '#312e81',
+    ctrlBadge:  '#4f46e5',
+    arrow:      'rgba(55,95,155,0.40)',   arrowA: '#4f46e5',
+    prBar:      '#6b90be',    prLbl:       '#5a7a9e',
+    chipFill:   '#dce8f8',    chipStroke:  '#94aed4',
+    chipFillA:  '#4f46e5',    chipFillDone:'#6366f1',
+    chipNum:    '#6b90be',    chipNumDone: '#fff',
+    chipLbl:    '#6b90be',    chipLblA:    '#312e81',
+    trackBg:    'rgba(100,140,190,0.3)',  trackFg: 'rgba(79,70,229,0.45)',
+    pillBg:     '#eef3ff',    pillStroke:  '#4f46e5',   pillTxt:   '#312e81',
+    statBg:     '#e8effc',    statStroke:  '#4f46e5',   statTxt:   '#312e81',
+    gT:'#ffffff', gB:'#f5f8ff', gTA:'#e2eeff', gBA:'#cfe0ff', gCT:'#f5f9ff', gCB:'#eaf1ff',
+};
 
-const Flow: React.FC<{ d: string; active: boolean }> = ({ d, active }) => (
-    <path
-        d={d} fill="none"
-        className={active ? 'flow-active' : 'flow-inactive'}
-        markerEnd={active ? 'url(#mk-active)' : 'url(#mk)'}
-    />
-);
-
-const Lbl: React.FC<{
-    x: number; y: number; anchor?: 'start' | 'middle' | 'end'; children: string;
-}> = ({ x, y, anchor = 'middle', children }) => (
-    <text x={x} y={y} className="arrow-label" textAnchor={anchor}>{children}</text>
-);
-
-// ── Main component ─────────────────────────────────────────────────────────────
-
+// ─── Component ─────────────────────────────────────────────────────────────────
 export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineState, cpuState }) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const [cw, setCw] = useState<number>(D.w);   // measured container width
-    const ch = (cw / D.w) * D.h;                 // height scales with width → no letterboxing
-
-    // ── Raw Canvas State for Dragging ──
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const blocksDataRef = useRef<Record<string, { x: number, y: number, w: number, h: number }>>({});
-    const dragStateRef = useRef<{ activeId: string | null; offsetX: number; offsetY: number }>({ activeId: null, offsetX: 0, offsetY: 0 });
-    const [renderTick, setRenderTick] = useState(0);
-    const redrawCanvas = () => setRenderTick(t => t + 1);
+    const [cw, setCw] = useState<number>(DW);
+    const ch = (cw / DW) * DH;
 
     useEffect(() => {
         const el = containerRef.current;
         if (!el) return;
-        const ro = new ResizeObserver(([e]) => setCw(Math.max(e.contentRect.width, 320)));
+        const ro = new ResizeObserver(([e]) => setCw(Math.max(e.contentRect.width, 400)));
         ro.observe(el);
         return () => ro.disconnect();
     }, []);
 
-    const [theme, setTheme] = useState(document.documentElement.getAttribute('data-theme') || 'dark');
+    const [theme, setTheme] = useState(
+        document.documentElement.getAttribute('data-theme') || 'dark'
+    );
     useEffect(() => {
-        const el = document.documentElement;
-        const upd = () => setTheme(el.getAttribute('data-theme') || 'dark');
-        upd();
-        const obs = new MutationObserver(ms => { for (const m of ms) if (m.attributeName === 'data-theme') upd(); });
-        obs.observe(el, { attributes: true });
+        const root = document.documentElement;
+        const sync = () => setTheme(root.getAttribute('data-theme') || 'dark');
+        sync();
+        const obs = new MutationObserver(ms => {
+            for (const m of ms) if (m.attributeName === 'data-theme') sync();
+        });
+        obs.observe(root, { attributes: true });
         return () => obs.disconnect();
     }, []);
 
-    // ── Convenience: convert design fractions → actual px ─────────────────────
-    const x = useCallback((f: number) => f * cw, [cw]);
-    const y = useCallback((f: number) => f * ch, [ch]);
+    const p = theme === 'light' ? LIGHT : DARK;
 
-    // ── Block extents ──────────────────────────────────────────────────────────
-    const imL = x(H.imLeft), imR = x(H.imRight);
-    const rfL = x(H.rfLeft), rfR = x(H.rfRight);
-    const alL = x(H.alLeft), alR = x(H.alRight);
-    const dmL = x(H.dmLeft), dmR = x(H.dmRight);
+    // Convert fractions → actual px
+    const fx = useCallback((f: number) => f * cw, [cw]);
+    const fy = useCallback((f: number) => f * ch, [ch]);
 
-    const blkTop = y(V.blkTop);
-    const blkH = y(V.blkH);
-    const blkBot = blkTop + blkH;
-    const blkMidY = blkTop + blkH / 2;
+    // ── Resolved pixel values ──────────────────────────────────────────────────
+    const bW  = fx(BLOCK_W / DW);   // block width in px
+    const bH  = fy(V.blkH);          // block height in px
+    const bT  = fy(V.blkTop);        // block top
+    const bB  = bT + bH;             // block bottom
+    const bMY = bT + bH / 2;         // block mid-y
 
-    const imCX = (imL + imR) / 2;
-    const rfCX = (rfL + rfR) / 2;
-    const alCX = (alL + alR) / 2;
-    const dmCX = (dmL + dmR) / 2;
+    // Per-block left/right/cx positions
+    const B = BLOCKS.map(f => ({ l: fx(f.l), r: fx(f.r), cx: fx(f.cx) }));
 
-    // HDU
-    const hduW = rfR - rfL + 20;
-    const hduL = rfL - 10;
-    const hduT = y(V.hduTop);
-    const hduH2 = y(V.hduH);
-    const hduCX = hduL + hduW / 2;
-    const hduCY = hduT + hduH2 / 2;
+    // HDU — sits above B[1] (REG FILE), same width as a block, centred on it
+    const hduT  = fy(V.hduTop);
+    const hduH  = fy(V.hduH);
 
-    // FWD
-    const fwdW = alR - alL + 40;
-    const fwdL = alL - 20;
-    const fwdT = y(V.fwdTop);
-    const fwdH2 = y(V.fwdH);
-    const fwdCX = fwdL + fwdW / 2;
-    const fwdCY = fwdT + fwdH2 / 2;
+    // FWD — sits below B[2] (ALU), same width as a block, centred on it
+    const fwdT  = fy(V.fwdTop);
+    const fwdH  = fy(V.fwdH);
 
-    // Pipeline reg x positions (midpoint between blocks)
-    const ifidX = (imR + rfL) / 2 - 4;
-    const idexX = (rfR + alL) / 2 - 4;
-    const exmemX = (alR + dmL) / 2 - 4;
-    const memwbX = dmR + 20;
+    // Pipeline register bar x positions (centre of each gap, offset for double-bar)
+    const prBars = [0, 1, 2, 3].map(i => ({
+        x:   (B[i].r + B[i + 1].l) / 2 - 5,   // leftmost bar start
+        lbl: ['IF/ID', 'ID/EX', 'EX/MEM', 'MEM/WB'][i],
+    }));
 
-    const pipeTop = blkTop - 10;
-    const pipeH = blkH + 20;
+    // WB feedback routing rows
+    const wbR1 = fy(V.wbRow1);
+    const wbR2 = fy(V.wbRow2);
 
-    // Stage dots
-    const dotY = y(V.dotCY);
-    const lblY = y(V.dotLblY);
-    const stageDots = [
-        { name: 'Fetch', cx: imCX },
-        { name: 'Decode', cx: rfCX },
-        { name: 'Execute', cx: alCX },
-        { name: 'Memory', cx: dmCX },
-        { name: 'WriteBack', cx: x(H.wbDotX) },
-    ];
+    // Stage chips
+    const STAGES    = ['Fetch', 'Decode', 'Execute', 'Memory', 'WriteBack'] as const;
+    const chipDefs  = STAGES.map((name, i) => ({ name, cx: B[i].cx, n: `${i + 1}` }));
+    const chipCY    = fy(V.chipCY);
+    const chipLblY  = fy(V.chipLbl);
 
-    // ── Active states ──────────────────────────────────────────────────────────
-    const stages = ['Fetch', 'Decode', 'Execute', 'Memory', 'WriteBack'] as const;
-    const currentStage = stages.find(s => pipelineState?.[s]?.instruction);
-    const currentInstruction = currentStage ? pipelineState?.[currentStage]?.instruction : null;
-    const controlSignals = pipelineState?.Decode?.controlSignals;
+    // ── Active stage logic ─────────────────────────────────────────────────────
+    const currentStage = STAGES.find(s => pipelineState?.[s]?.instruction);
+    const curInst      = currentStage ? pipelineState?.[currentStage]?.instruction : null;
+    const cs           = pipelineState?.Decode?.controlSignals;
+    const currentIdx   = currentStage ? STAGES.indexOf(currentStage) : -1;
 
-    const fetchOn = currentStage === 'Fetch';
-    const regOn = currentStage === 'Decode' || currentStage === 'WriteBack';
-    const aluOn = currentStage === 'Execute';
-    const memOn = currentStage === 'Memory' && !!(controlSignals?.memRead || controlSignals?.memWrite);
-    const wbOn = currentStage === 'WriteBack';
-    const fwdOn = currentStage === 'Execute';
+    const isActive = (s: typeof STAGES[number]) => currentStage === s;
 
-    const a1 = currentStage === 'Decode';
-    const a2 = currentStage === 'Execute';
-    const a3 = currentStage === 'Memory' && !!(controlSignals?.memRead || controlSignals?.memWrite);
-    const a4 = currentStage === 'WriteBack' && !!(controlSignals?.regWrite && !controlSignals?.memToReg);
-    const a5 = currentStage === 'WriteBack' && !!controlSignals?.memToReg;
-    const hduIn = currentStage === 'Decode';
-    const fwdEx = currentStage === 'Execute';
-    const fwdMem = currentStage === 'Memory' || currentStage === 'WriteBack';
-    const fwdOut = currentStage === 'Execute';
+    const fetchOn = isActive('Fetch');
+    const regOn   = isActive('Decode')    || isActive('WriteBack');
+    const aluOn   = isActive('Execute');
+    const memOn   = isActive('Memory')    && !!(cs?.memRead || cs?.memWrite);
+    const wbOn    = isActive('WriteBack');
+    const fwdOn   = isActive('Execute');
 
-    // ALU detail
+    const a1     = isActive('Decode');
+    const a2     = isActive('Execute');
+    const a3     = isActive('Memory')    && !!(cs?.memRead || cs?.memWrite);
+    const a4     = isActive('WriteBack') && !!(cs?.regWrite && !cs?.memToReg);
+    const a5     = isActive('WriteBack') && !!cs?.memToReg;
+    const hduIn  = isActive('Decode');
+    const fwdEx  = isActive('Execute');
+    const fwdMem = isActive('Memory')    || isActive('WriteBack');
+    const fwdOut = isActive('Execute');
+
+    // ALU computation detail
     let aluDetail = '';
     if (aluOn && pipelineState?.Execute.decoded) {
         const { decoded, controlSignals: sigs, executionResult } = pipelineState.Execute;
-        const regs = cpuState?.registers || {};
+        const regs = cpuState?.registers ?? {};
         const valA = decoded!.src1Reg ? regs[decoded!.src1Reg] : 0;
         const valB = sigs!.aluSrc === 'imm'
             ? (decoded!.immValue ?? 0)
             : (decoded!.src2Reg ? regs[decoded!.src2Reg] : 0);
-        const res = executionResult ?? (sigs!.aluOp === 'MOV' ? valB : sigs!.aluOp === 'ADD' ? valA + valB : valA - valB);
-        aluDetail = `${sigs!.aluOp === 'MOV' ? '' : `${valA} · `}${valB} = ${res}`;
+        const res  = executionResult ?? (sigs!.aluOp === 'MOV' ? valB
+            : sigs!.aluOp === 'ADD' ? valA + valB : valA - valB);
+        aluDetail = sigs!.aluOp === 'MOV' ? `→ ${res}` : `${valA} ${sigs!.aluOp} ${valB} = ${res}`;
     }
 
-    // WB routing rows
-    const wb1 = y(V.wbRoute1);
-    const wb2 = y(V.wbRoute2);
+    // ── Drawing primitives ─────────────────────────────────────────────────────
 
+    // ── SVG text helper ──────────────────────────────────────────────────────────
+    // dominantBaseline="middle" is unreliable in WebKit/Safari.
+    // Safe cross-browser centering: y = visualCenterY + fontSize * 0.35
+    // (shifts baseline down from cap-height midpoint).
+    const mid = (cy: number, fs: number) => cy + fs * 0.35;
 
-    // ── Canvas Rendering Layer ──────────────────────────────────────────────────
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+    // Main data block — uniform height, text guaranteed inside at any scale
+    function DataBlock({ i, lines, active, detail }: {
+        i: number; lines: string[]; active: boolean; detail?: string;
+    }) {
+        const lx  = B[i].l;
+        const cx2 = B[i].cx;
+        const fs  = 13;
+        const lh  = fs * 1.7;   // line-height ~ 22 px at design size
+        const totalH = lines.length * lh;
+        // First line centre: block centre shifted up by half the total text height,
+        // then down half a line-height to hit the first line's visual centre.
+        const firstCY = detail
+            ? bT + bH / 2 - totalH / 2 - 5
+            : bT + bH / 2 - totalH / 2 + lh / 2;
+        return (
+            <g>
+                <rect x={lx} y={bT} width={bW} height={bH} rx={10}
+                    fill={`url(#${active ? 'gA' : 'gI'})`}
+                    stroke={active ? p.blkStrokeA : p.blkStroke}
+                    strokeWidth={active ? 2.5 : 1.5}
+                    style={{ filter: active ? 'url(#glow)' : undefined, transition: 'stroke 0.2s' }}
+                />
+                {lines.map((l, idx) => (
+                    <text key={idx}
+                        x={cx2} y={mid(firstCY + idx * lh, fs)}
+                        fill={active ? p.blkTxtA : p.blkTxt}
+                        fontSize={fs} fontWeight={700} fontFamily="var(--font-sans)"
+                        textAnchor="middle"
+                        style={{ pointerEvents: 'none', letterSpacing: '0.04em', transition: 'fill 0.2s' }}
+                    >{l}</text>
+                ))}
+                {detail && (
+                    <text x={cx2} y={mid(bT + bH / 2 + totalH / 2 + 2, 10)}
+                        fill={p.blkDetail} fontSize={10} fontFamily="var(--font-mono)"
+                        textAnchor="middle"
+                        style={{ pointerEvents: 'none' }}
+                    >{detail}</text>
+                )}
+            </g>
+        );
+    }
 
-        ctx.clearRect(0, 0, cw, ch);
+    // Control block (HDU / FWD):
+    //   • Only the SHORT badge ("HDU" / "FWD") lives inside the box — guaranteed to fit.
+    //   • The full name appears as a small label BELOW the box (never overflows).
+    function CtrlBlock({ lx, ty, w, h, name, badge, active }: {
+        lx: number; ty: number; w: number; h: number;
+        name: string; badge: string; active: boolean;
+    }) {
+        const cx2  = lx + w / 2;
+        const bdgFs = 12;
+        return (
+            <g>
+                <rect x={lx} y={ty} width={w} height={h} rx={8}
+                    fill={`url(#${active ? 'gA' : 'gC'})`}
+                    stroke={active ? p.ctrlStrokeA : p.ctrlStroke}
+                    strokeWidth={active ? 2 : 1.5}
+                    style={{ filter: active ? 'url(#glow)' : undefined, transition: 'stroke 0.2s' }}
+                />
+                {/* Badge — single short string, centred in box, safe at any scale */}
+                <text x={cx2} y={mid(ty + h / 2, bdgFs)}
+                    fill={p.ctrlBadge}
+                    fontSize={bdgFs} fontWeight={800} fontFamily="var(--font-sans)"
+                    textAnchor="middle"
+                    style={{ pointerEvents: 'none', letterSpacing: '0.10em' }}
+                >{badge}</text>
+                {/* Full name — BELOW the box, never inside */}
+                <text x={cx2} y={mid(ty + h + 11, 9)}
+                    fill={active ? p.ctrlTxtA : p.ctrlTxt}
+                    fontSize={9} fontWeight={600} fontFamily="var(--font-sans)"
+                    textAnchor="middle"
+                    style={{ pointerEvents: 'none', letterSpacing: '0.05em' }}
+                >{name}</text>
+            </g>
+        );
+    }
 
-        // Precalculated layout defaults
-        const defaults = {
-            'Fetch': { x: imL, y: blkTop, w: imR - imL, h: blkH },
-            'Decode': { x: rfL, y: blkTop - 10, w: rfR - rfL, h: blkH + 20 },
-            'Execute': { x: alL, y: blkTop - 5, w: alR - alL, h: blkH + 10 },
-            'Memory': { x: dmL, y: blkTop - 5, w: dmR - dmL, h: blkH + 10 },
-            'WriteBack': { x: cw * 0.86, y: blkTop - 5, w: cw * 0.12, h: blkH + 10 } // New block for WB!
-        };
+    // Directional arrow
+    function Arrow({ d, active }: { d: string; active: boolean }) {
+        return (
+            <path d={d} fill="none"
+                stroke={active ? p.arrowA : p.arrow}
+                strokeWidth={active ? 2.5 : 1.5}
+                opacity={active ? 1 : 0.65}
+                markerEnd={active ? 'url(#mkA)' : 'url(#mkI)'}
+                style={{ transition: 'stroke 0.2s, opacity 0.2s' }}
+            />
+        );
+    }
 
-        const currentBlocks = blocksDataRef.current;
+    // Pill label — only rendered when arrow is active
+    function Pill({ x: lx, y: ly, text, anchor = 'middle' }: {
+        x: number; y: number; text: string; anchor?: 'start' | 'middle' | 'end';
+    }) {
+        const tw = text.length * 6.2 + 18;
+        const ox = anchor === 'start' ? 0 : anchor === 'end' ? -tw : -tw / 2;
+        return (
+            <g>
+                <rect x={lx + ox} y={ly - 9} width={tw} height={18} rx={5}
+                    fill={p.pillBg} stroke={p.pillStroke} strokeWidth={1} opacity={0.97}
+                />
+                <text x={lx} y={ly}
+                    fill={p.pillTxt} fontSize={9.5} fontWeight={600}
+                    fontFamily="var(--font-sans)"
+                    textAnchor={anchor} dominantBaseline="middle"
+                    style={{ pointerEvents: 'none' }}
+                >{text}</text>
+            </g>
+        );
+    }
 
-        // Populate defaults once per session unless missing, but update layout width/height on resize
-        if (Object.keys(currentBlocks).length === 0) {
-            Object.assign(currentBlocks, defaults);
-        } else {
-            for (const id in defaults) {
-                if (currentBlocks[id]) {
-                    currentBlocks[id].w = (defaults as any)[id].w;
-                    currentBlocks[id].h = (defaults as any)[id].h;
-                } else {
-                    currentBlocks[id] = { ...(defaults as any)[id] };
-                }
-            }
-        }
+    // Pipeline register double-bar: spans exactly block height (bT → bB),
+    // label appears BELOW the block row with a small gap.
+    function PipeReg({ x: lx, label }: { x: number; label: string }) {
+        return (
+            <g>
+                <rect x={lx}      y={bT} width={4} height={bH} fill={p.prBar} opacity={0.75} rx={1} />
+                <rect x={lx + 7}  y={bT} width={4} height={bH} fill={p.prBar} opacity={0.75} rx={1} />
+                <text x={lx + 5.5} y={bB + 14}
+                    fill={p.prLbl} fontSize={9} fontFamily="var(--font-mono)"
+                    textAnchor="middle" style={{ pointerEvents: 'none' }}
+                >{label}</text>
+            </g>
+        );
+    }
 
-        const getProps = (id: string) => {
-            switch (id) {
-                case 'Fetch': return { title: 'Fetch: INST MEM', active: fetchOn, inst: pipelineState?.Fetch?.instruction?.raw };
-                case 'Decode': return { title: 'Decode: REG FILE', active: regOn, inst: pipelineState?.Decode?.instruction?.raw, detail: undefined };
-                case 'Execute': return { title: 'Execute: ALU', active: aluOn, inst: pipelineState?.Execute?.instruction?.raw, detail: aluDetail };
-                case 'Memory': return { title: 'Memory: DATA MEM', active: memOn, inst: pipelineState?.Memory?.instruction?.raw };
-                case 'WriteBack': return { title: 'WriteBack: REG', active: wbOn, inst: pipelineState?.WriteBack?.instruction?.raw };
-            }
-            return { title: id, active: false, inst: undefined };
-        };
-
-        for (const [id, rect] of Object.entries(currentBlocks)) {
-            const props = getProps(id);
-
-            ctx.fillStyle = props.active
-                ? (theme === 'light' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(56, 189, 248, 0.1)')
-                : (theme === 'light' ? '#f8fafc' : '#1e293b');
-
-            ctx.strokeStyle = props.active
-                ? '#38bdf8'
-                : (theme === 'light' ? '#cbd5e1' : '#334155');
-
-            ctx.lineWidth = props.active ? 2 : 1;
-
-            ctx.beginPath();
-            if (ctx.roundRect) {
-                ctx.roundRect(rect.x, rect.y, rect.w, rect.h, 7);
-            } else {
-                ctx.rect(rect.x, rect.y, rect.w, rect.h);
-            }
-            ctx.fill();
-            ctx.stroke();
-
-            // Label
-            ctx.fillStyle = theme === 'light' ? '#334155' : '#cbd5e1';
-            ctx.font = 'bold 12px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            const titleY = props.detail ? rect.y + 20 : rect.y + 26;
-            ctx.fillText(props.title, rect.x + rect.w / 2, titleY);
-
-            // Detail
-            if (props.detail) {
-                ctx.fillStyle = theme === 'light' ? '#64748b' : '#94a3b8';
-                ctx.font = '10px sans-serif';
-                ctx.fillText(props.detail, rect.x + rect.w / 2, titleY + 16);
-            }
-
-            // Instruction raw string explicitly printed inside the node
-            ctx.fillStyle = props.active ? '#38bdf8' : (theme === 'light' ? '#94a3b8' : '#475569');
-            ctx.font = '11px monospace';
-            const txt = props.inst || 'Idle';
-            ctx.fillText(txt, rect.x + rect.w / 2, rect.y + rect.h / 2 + 10);
-        }
-
-    }, [cw, ch, pipelineState, theme, renderTick, fetchOn, regOn, aluOn, memOn, wbOn, aluDetail]);
-
-
-    // ── Custom Drag Events ──────────────────────────────────────────────────────
-    const getPointerPos = (e: React.MouseEvent | React.TouchEvent) => {
-        const rect = canvasRef.current?.getBoundingClientRect();
-        if (!rect) return { x: 0, y: 0 };
-        let clientX, clientY;
-        if ('touches' in e) {
-            clientX = e.touches[0].clientX;
-            clientY = e.touches[0].clientY;
-        } else {
-            clientX = (e as React.MouseEvent).clientX;
-            clientY = (e as React.MouseEvent).clientY;
-        }
-        return { x: clientX - rect.left, y: clientY - rect.top };
-    };
-
-    const handlePointerDown = (e: React.MouseEvent | React.TouchEvent) => {
-        const { x, y } = getPointerPos(e);
-        const blocks = blocksDataRef.current;
-
-        // Reverse array tests top-most objects first (if overlapping)
-        const keys = Object.keys(blocks).reverse();
-        for (const id of keys) {
-            const rect = blocks[id];
-            if (x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h) {
-                dragStateRef.current = { activeId: id, offsetX: x - rect.x, offsetY: y - rect.y };
-                return;
-            }
-        }
-    };
-
-    const handlePointerMove = (e: React.MouseEvent | React.TouchEvent) => {
-        const state = dragStateRef.current;
-        if (!state.activeId) return;
-
-        const { x, y } = getPointerPos(e);
-        const block = blocksDataRef.current[state.activeId];
-
-        // Offset guarantees that the block's corner stays relative to where the user clicked it
-        block.x = x - state.offsetX;
-        block.y = y - state.offsetY;
-
-        redrawCanvas();
-    };
-
-    const handlePointerUp = () => {
-        dragStateRef.current.activeId = null;
-    };
-
-
-    // ── Render ─────────────────────────────────────────────────────────────────
+    // ── SVG render ─────────────────────────────────────────────────────────────
     return (
         <div
             ref={containerRef}
-            className="microarch-container"
-            style={{ width: '100%', height: `${ch}px`, position: 'relative', minHeight: 380 }}
+            style={{ width: '100%', height: `${ch}px`, background: p.bg, minHeight: 300 }}
         >
-            {/* Background Datapath wiring and Logic components */}
-            <svg width={cw} height={ch} style={{ position: 'absolute', inset: 0, display: 'block', overflow: 'visible' }}>
+            <svg width={cw} height={ch} style={{ display: 'block' }}>
                 <defs>
-                    <marker id="mk" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto">
-                        <polygon points="0 0,7 2.5,0 5" className="arrow-inactive-marker" />
+                    {/* Arrowheads */}
+                    <marker id="mkI" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                        <polygon points="0 0,8 3,0 6" fill={p.arrow} />
                     </marker>
-                    <marker id="mk-active" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto">
-                        <polygon points="0 0,7 2.5,0 5" className="arrow-active-marker" />
+                    <marker id="mkA" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                        <polygon points="0 0,8 3,0 6" fill={p.arrowA} />
                     </marker>
+
+                    {/* Block gradients */}
+                    <linearGradient id="gI" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%"   stopColor={p.gT} />
+                        <stop offset="100%" stopColor={p.gB} />
+                    </linearGradient>
+                    <linearGradient id="gA" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%"   stopColor={p.gTA} />
+                        <stop offset="100%" stopColor={p.gBA} />
+                    </linearGradient>
+                    <linearGradient id="gC" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%"   stopColor={p.gCT} />
+                        <stop offset="100%" stopColor={p.gCB} />
+                    </linearGradient>
+
+                    {/* Glow filter */}
+                    <filter id="glow" x="-25%" y="-25%" width="150%" height="150%">
+                        <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="b" />
+                        <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+                    </filter>
+                    <filter id="chipGlow" x="-70%" y="-70%" width="240%" height="240%">
+                        <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="b" />
+                        <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+                    </filter>
                 </defs>
 
-                {/* ══ Stage progress dots ════════════════════════════════════════ */}
-                {stageDots.map((dot, i) => {
-                    const active = currentStage === dot.name;
+                {/* ── Stage progress bar ────────────────────────────────────── */}
+                {/* background track */}
+                <line x1={B[0].cx} y1={chipCY} x2={B[4].cx} y2={chipCY}
+                    stroke={p.trackBg} strokeWidth={2} />
+                {/* progress fill up to active stage */}
+                {currentIdx > 0 && (
+                    <line x1={B[0].cx} y1={chipCY} x2={B[currentIdx].cx} y2={chipCY}
+                        stroke={p.trackFg} strokeWidth={2.5} />
+                )}
+                {/* stage chips */}
+                {chipDefs.map((s, i) => {
+                    const active = currentStage === s.name;
+                    const done   = currentIdx > i;
                     return (
-                        <g key={dot.name}>
-                            {i < stageDots.length - 1 && (
-                                <line
-                                    x1={dot.cx + 11} y1={dotY}
-                                    x2={stageDots[i + 1].cx - 11} y2={dotY}
-                                    className={active ? 'flow-active' : 'flow-inactive'}
-                                />
-                            )}
-                            <circle cx={dot.cx} cy={dotY} r={11}
-                                className={active ? 'stage-dot stage-dot--active' : 'stage-dot'} />
-                            <text x={dot.cx} y={lblY}
-                                className={active ? 'stage-dot-label stage-dot-label--active' : 'stage-dot-label'}
+                        <g key={s.name}>
+                            <circle cx={s.cx} cy={chipCY} r={15}
+                                fill={active ? p.chipFillA : done ? p.chipFillDone : p.chipFill}
+                                stroke={active || done ? 'none' : p.chipStroke}
+                                strokeWidth={1.5}
+                                opacity={done ? 0.8 : 1}
+                                style={{
+                                    filter:     active ? 'url(#chipGlow)' : undefined,
+                                    transition: 'fill 0.25s',
+                                }}
+                            />
+                            <text x={s.cx} y={chipCY}
+                                fill={active || done ? '#fff' : p.chipNum}
+                                fontSize={10} fontWeight={700} fontFamily="var(--font-sans)"
+                                textAnchor="middle" dominantBaseline="middle"
+                                style={{ pointerEvents: 'none' }}
+                            >{s.n}</text>
+                            <text x={s.cx} y={chipLblY}
+                                fill={active ? p.chipLblA : p.chipLbl}
+                                fontSize={11} fontWeight={active ? 700 : 500}
+                                fontFamily="var(--font-sans)"
                                 textAnchor="middle"
-                            >{dot.name}</text>
+                                style={{ pointerEvents: 'none', transition: 'fill 0.2s' }}
+                            >{s.name}</text>
                         </g>
                     );
                 })}
 
-                {/* ══ Hazard Detection Unit ══════════════════════════════════════ */}
-                <Rect x={hduL} y={hduT} w={hduW} h={hduH2} active={false} />
-                <BlockLabel cx={hduCX} cy={hduCY} lines={['HAZARD', 'DETECT']} active={false} />
-                <text x={hduCX} y={hduT - 7} className="block-badge" textAnchor="middle">HDU</text>
+                {/* ── Pipeline register bars ────────────────────────────────── */}
+                {prBars.map(({ x: bx2, lbl }) => <PipeReg key={lbl} x={bx2} label={lbl} />)}
 
-                {/* ══ Pipeline register double-bar markers ══════════════════════ */}
-                <PipeReg x={ifidX} top={pipeTop} h={pipeH} label="IF/ID" />
-                <PipeReg x={idexX} top={pipeTop} h={pipeH} label="ID/EX" />
-                <PipeReg x={exmemX} top={pipeTop} h={pipeH} label="EX/MEM" />
-                <PipeReg x={memwbX} top={pipeTop} h={pipeH} label="MEM/WB" />
+                {/* ── HDU — above REG FILE (B[1]) ───────────────────────────── */}
+                <CtrlBlock
+                    lx={B[1].l} ty={hduT} w={bW} h={hduH}
+                    name="HAZARD DETECT" badge="HDU" active={false}
+                />
+                {/* HDU ↔ Decode connector */}
+                <Arrow d={`M ${B[1].cx - 12} ${bT} V ${hduT + hduH}`} active={hduIn} />
+                {hduIn && (
+                    <Pill x={B[1].cx + 22} y={(hduT + hduH + bT) / 2}
+                        text="IF/ID.Rs,Rt" anchor="start" />
+                )}
 
-                {/* ══ Forwarding Unit ════════════════════════════════════════════ */}
-                <Rect x={fwdL} y={fwdT} w={fwdW} h={fwdH2} active={fwdOn} />
-                <BlockLabel cx={fwdCX} cy={fwdCY} lines={['FORWARD UNIT']} active={fwdOn} />
-                <text x={fwdCX} y={fwdT - 7} className="block-badge" textAnchor="middle">FWD</text>
+                {/* ── Main data blocks ──────────────────────────────────────── */}
+                <DataBlock i={0} lines={['INST', 'MEM']}  active={fetchOn} />
+                <DataBlock i={1} lines={['REG', 'FILE']}  active={regOn} />
+                <DataBlock i={2} lines={['ALU']}           active={aluOn}  detail={aluDetail} />
+                <DataBlock i={3} lines={['DATA', 'MEM']}  active={memOn} />
+                <DataBlock i={4} lines={['WB']}            active={wbOn} />
 
-                {/* ══ Arrows ════════════════════════════════════════════════════ */}
-                <Flow d={`M ${imR} ${blkMidY} H ${rfL - 1}`} active={a1} />
-                <Lbl x={(imR + rfL) / 2} y={blkMidY - 9}>Inst [31:0]</Lbl>
+                {/* ── FWD — below ALU (B[2]) ───────────────────────────────── */}
+                <CtrlBlock
+                    lx={B[2].l} ty={fwdT} w={bW} h={fwdH}
+                    name="FORWARDING UNIT" badge="FWD" active={fwdOn}
+                />
 
-                <Flow d={`M ${rfR} ${blkMidY} H ${alL - 1}`} active={a2} />
-                <Lbl x={(rfR + alL) / 2} y={blkMidY - 9}>Read Data 1/2</Lbl>
+                {/* ── Forward datapath arrows ───────────────────────────────── */}
+                {/* INST MEM → REG FILE */}
+                <Arrow d={`M ${B[0].r} ${bMY} H ${B[1].l - 1}`} active={a1} />
+                {a1 && <Pill x={(B[0].r + B[1].l) / 2} y={bMY - 18} text="Inst [31:0]" />}
 
-                <Flow d={`M ${alR} ${blkMidY} H ${dmL - 1}`} active={a3} />
-                <Lbl x={(alR + dmL) / 2} y={blkMidY - 9}>ALU Result</Lbl>
+                {/* REG FILE → ALU */}
+                <Arrow d={`M ${B[1].r} ${bMY} H ${B[2].l - 1}`} active={a2} />
+                {a2 && <Pill x={(B[1].r + B[2].l) / 2} y={bMY - 18} text="Read Data 1/2" />}
 
-                <Flow d={`M ${alL + 8} ${blkBot - 5} V ${wb1} H ${rfCX} V ${blkBot + 10}`} active={a4} />
-                <Lbl x={(alL + rfCX) / 2} y={wb1 + 12}>ALU Result</Lbl>
+                {/* ALU → DATA MEM */}
+                <Arrow d={`M ${B[2].r} ${bMY} H ${B[3].l - 1}`} active={a3} />
+                {a3 && <Pill x={(B[2].r + B[3].l) / 2} y={bMY - 18} text="ALU Result" />}
 
-                <Flow d={`M ${dmL + 8} ${blkBot - 5} V ${wb2} H ${rfCX - 6} V ${blkBot + 10}`} active={a5} />
-                <Lbl x={(dmL + rfCX) / 2 + 10} y={wb2 + 12}>Read Data</Lbl>
+                {/* DATA MEM → WB */}
+                <Arrow d={`M ${B[3].r} ${bMY} H ${B[4].l - 1}`} active={a5} />
+                {a5 && <Pill x={(B[3].r + B[4].l) / 2} y={bMY - 18} text="Mem Data" />}
 
-                <Flow d={`M ${rfCX - 16} ${blkTop - 10} V ${hduT + hduH2}`} active={hduIn} />
-                <Lbl x={rfCX + 22} y={(hduT + hduH2 + blkTop - 10) / 2} anchor="start">IF/ID.Rs,Rt</Lbl>
+                {/* ── Write-back feedback paths ─────────────────────────────── */}
+                {/* ALU result → REG FILE (non-load WB) */}
+                <Arrow
+                    d={`M ${B[2].cx} ${bB + 4} V ${wbR1} H ${B[1].cx} V ${bB - 1}`}
+                    active={a4}
+                />
+                {a4 && (
+                    <Pill x={(B[2].cx + B[1].cx) / 2} y={wbR1 + 14} text="ALU Result (WB)" />
+                )}
 
-                <Flow d={`M ${hduL} ${hduCY} H ${imL - 12} V ${blkMidY} H ${imL - 1}`} active={false} />
-                <Lbl x={(hduL + imL - 12) / 2} y={hduCY - 9}>PCWrite</Lbl>
+                {/* Load data → REG FILE (load WB) */}
+                <Arrow
+                    d={`M ${B[4].cx} ${bB + 4} V ${wbR2} H ${B[1].cx - 8} V ${bB - 1}`}
+                    active={a5}
+                />
+                {a5 && (
+                    <Pill x={(B[4].cx + B[1].cx) / 2} y={wbR2 + 14} text="Read Data (WB)" />
+                )}
 
-                <Flow d={`M ${alCX + 8} ${blkBot + 5} V ${fwdT - 1}`} active={fwdEx} />
-                <Lbl x={alCX + 22} y={(blkBot + fwdT) / 2} anchor="start">EX/MEM.Rd</Lbl>
+                {/* ── Forwarding arrows ─────────────────────────────────────── */}
+                {/* ALU → FWD */}
+                <Arrow d={`M ${B[2].cx + 10} ${bB + 4} V ${fwdT - 1}`} active={fwdEx} />
+                {fwdEx && (
+                    <Pill x={B[2].cx + 26} y={(bB + fwdT) / 2}
+                        text="EX/MEM.Rd" anchor="start" />
+                )}
 
-                <Flow d={`M ${dmL + 8} ${blkBot + 5} H ${fwdL + fwdW + 8} V ${fwdT - 1}`} active={fwdMem} />
-                <Lbl x={(dmL + fwdL + fwdW) / 2} y={blkBot + 18}>MEM/WB.Rd</Lbl>
+                {/* DATA MEM → FWD */}
+                <Arrow
+                    d={`M ${B[3].cx - 8} ${bB + 4} H ${B[2].r + 22} V ${fwdT - 1}`}
+                    active={fwdMem}
+                />
+                {fwdMem && (
+                    <Pill x={(B[3].cx + B[2].r) / 2} y={bB + 18} text="MEM/WB.Rd" />
+                )}
 
-                <Flow d={`M ${fwdL + 12} ${fwdT} V ${blkBot + 5} H ${alCX - 8} V ${blkBot - 1}`} active={fwdOut} />
-                <Lbl x={fwdL - 4} y={(fwdT + blkBot) / 2} anchor="end">Fwd A/B</Lbl>
+                {/* FWD → ALU inputs */}
+                <Arrow
+                    d={`M ${B[2].l + 8} ${fwdT} V ${bB + 4} H ${B[2].cx - 14} V ${bB - 1}`}
+                    active={fwdOut}
+                />
+                {fwdOut && (
+                    <Pill x={B[2].l - 4} y={(fwdT + bB) / 2} text="Fwd A/B" anchor="end" />
+                )}
+
+                {/* ── Active instruction status chip ────────────────────────── */}
+                {currentStage && curInst && (() => {
+                    const label = `${curInst.opcode}  ·  ${currentStage}`;
+                    const w2    = label.length * 6.5 + 22;
+                    const rx2   = cw - 12;
+                    return (
+                        <g>
+                            <rect x={rx2 - w2} y={10} width={w2} height={24} rx={7}
+                                fill={p.statBg} stroke={p.statStroke} strokeWidth={1.5}
+                            />
+                            <text x={rx2 - w2 / 2} y={22}
+                                fill={p.statTxt} fontSize={10.5} fontWeight={700}
+                                fontFamily="var(--font-mono)"
+                                textAnchor="middle" dominantBaseline="middle"
+                                style={{ pointerEvents: 'none' }}
+                            >{label}</text>
+                        </g>
+                    );
+                })()}
             </svg>
-
-            {/* Interactive Overlay Layer for Stage Blocks */}
-            <canvas
-                ref={canvasRef}
-                width={cw}
-                height={ch}
-                style={{ position: 'absolute', inset: 0, zIndex: 5, touchAction: 'none' }}
-                onMouseDown={handlePointerDown}
-                onMouseMove={handlePointerMove}
-                onMouseUp={handlePointerUp}
-                onMouseLeave={handlePointerUp}
-                onTouchStart={handlePointerDown}
-                onTouchMove={handlePointerMove}
-                onTouchEnd={handlePointerUp}
-                onTouchCancel={handlePointerUp}
-            />
-
-            {/* ── DEBUG card ──────────────────────────────────────────────────── */}
-            <div style={{
-                position: 'absolute', bottom: 12, right: 12, zIndex: 10, pointerEvents: 'none',
-                background: theme === 'light' ? 'rgba(255,255,255,0.94)' : 'rgba(13,15,20,0.94)',
-                backdropFilter: 'blur(8px)',
-                border: '1px solid var(--accent-color)',
-                borderLeft: '3px solid var(--accent-color)',
-                borderRadius: 8, padding: '0.45rem 0.75rem', minWidth: 160,
-                boxShadow: theme === 'light'
-                    ? '0 2px 16px rgba(15,23,42,0.13)'
-                    : '0 4px 24px rgba(0,0,0,0.65)',
-            }}>
-                <div style={{ fontSize: '0.58rem', fontWeight: 700, color: 'var(--accent-color)', fontFamily: 'var(--font-sans)', marginBottom: '0.3rem', display: 'flex', justifyContent: 'space-between', letterSpacing: '0.09em' }}>
-                    <span>DEBUG</span>
-                    <span style={{ color: 'var(--success-color)', fontSize: '0.5rem' }}>● LIVE</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.63rem', fontFamily: 'var(--font-mono)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1.2rem' }}>
-                        <span style={{ color: 'var(--text-secondary)' }}>Stage:</span>
-                        <span style={{ color: 'var(--text-primary)' }}>{currentStage || '--'}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1.2rem' }}>
-                        <span style={{ color: 'var(--text-secondary)' }}>Op:</span>
-                        <span style={{ color: 'var(--success-color)', fontWeight: 600 }}>{currentInstruction?.opcode || '--'}</span>
-                    </div>
-                    {currentStage === 'Execute' && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1.2rem', borderTop: '1px solid var(--border-color)', marginTop: '0.15rem', paddingTop: '0.15rem' }}>
-                            <span style={{ color: 'var(--text-secondary)' }}>ALU:</span>
-                            <span>{controlSignals?.aluOp}</span>
-                        </div>
-                    )}
-                </div>
-            </div>
         </div>
     );
 };

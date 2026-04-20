@@ -34,11 +34,6 @@ function parseImm(op: string): number {
     return parseInt(s, s.startsWith('0x') || s.startsWith('0X') ? 16 : 10) || 0;
 }
 
-/** Parse a memory operand like "[R2]" → register number 2. */
-function parseMemBase(op: string): number {
-    const match = op.match(/\[(\w+)\]/);
-    return match ? regNum(match[1]) : 0;
-}
 
 /**
  * Zero-extend `value` to `bits` bits, returned as a number.
