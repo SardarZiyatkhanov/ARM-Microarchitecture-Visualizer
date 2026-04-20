@@ -122,6 +122,15 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
     const [cw, setCw] = useState<number>(DW);
     const ch = (cw / DW) * DH;
 
+    // ── Drag state ────────────────────────────────────────────────────────────
+    const [blockOffsets, setBlockOffsets] = useState<{ dx: number; dy: number }[]>(
+        () => Array.from({ length: 5 }, () => ({ dx: 0, dy: 0 }))
+    );
+    const dragRef = useRef<{ id: number | null; startX: number; startY: number; origDx: number; origDy: number }>(
+        { id: null, startX: 0, startY: 0, origDx: 0, origDy: 0 }
+    );
+    const [dragging, setDragging] = useState(false);
+
     useEffect(() => {
         const el = containerRef.current;
         if (!el) return;
@@ -235,19 +244,22 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
     function DataBlock({ i, lines, active, detail }: {
         i: number; lines: string[]; active: boolean; detail?: string;
     }) {
-        const lx  = B[i].l;
-        const cx2 = B[i].cx;
+        const off = blockOffsets[i];
+        const lx  = B[i].l + off.dx;
+        const ty  = bT + off.dy;
+        const cx2 = lx + bW / 2;
         const fs  = 13;
-        const lh  = fs * 1.7;   // line-height ~ 22 px at design size
+        const lh  = fs * 1.7;
         const totalH = lines.length * lh;
-        // First line centre: block centre shifted up by half the total text height,
-        // then down half a line-height to hit the first line's visual centre.
         const firstCY = detail
-            ? bT + bH / 2 - totalH / 2 - 5
-            : bT + bH / 2 - totalH / 2 + lh / 2;
+            ? ty + bH / 2 - totalH / 2 - 5
+            : ty + bH / 2 - totalH / 2 + lh / 2;
+        const isDraggingThis = dragging && dragRef.current.id === i;
         return (
-            <g>
-                <rect x={lx} y={bT} width={bW} height={bH} rx={10}
+            <g style={{ cursor: isDraggingThis ? 'grabbing' : 'grab' }}
+               onMouseDown={e => startDrag(e, i)}
+               onTouchStart={e => startDragTouch(e, i)}>
+                <rect x={lx} y={ty} width={bW} height={bH} rx={10}
                     fill={`url(#${active ? 'gA' : 'gI'})`}
                     stroke={active ? p.blkStrokeA : p.blkStroke}
                     strokeWidth={active ? 2.5 : 1.5}
@@ -263,7 +275,7 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
                     >{l}</text>
                 ))}
                 {detail && (
-                    <text x={cx2} y={mid(bT + bH / 2 + totalH / 2 + 2, 10)}
+                    <text x={cx2} y={mid(ty + bH / 2 + totalH / 2 + 2, 10)}
                         fill={p.blkDetail} fontSize={10} fontFamily="var(--font-mono)"
                         textAnchor="middle"
                         style={{ pointerEvents: 'none' }}
@@ -357,13 +369,56 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
         );
     }
 
+    // ── Drag handlers ─────────────────────────────────────────────────────────
+    const getSvgPos = (clientX: number, clientY: number) => {
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (!rect) return { x: 0, y: 0 };
+        return { x: clientX - rect.left, y: clientY - rect.top };
+    };
+
+    const startDrag = (e: React.MouseEvent, id: number) => {
+        e.preventDefault();
+        const { x, y } = getSvgPos(e.clientX, e.clientY);
+        dragRef.current = { id, startX: x, startY: y, origDx: blockOffsets[id].dx, origDy: blockOffsets[id].dy };
+        setDragging(true);
+    };
+
+    const startDragTouch = (e: React.TouchEvent, id: number) => {
+        const t = e.touches[0];
+        const { x, y } = getSvgPos(t.clientX, t.clientY);
+        dragRef.current = { id, startX: x, startY: y, origDx: blockOffsets[id].dx, origDy: blockOffsets[id].dy };
+        setDragging(true);
+    };
+
+    const onMove = (clientX: number, clientY: number) => {
+        const { id, startX, startY, origDx, origDy } = dragRef.current;
+        if (id === null) return;
+        const { x, y } = getSvgPos(clientX, clientY);
+        setBlockOffsets(prev => {
+            const next = [...prev];
+            next[id] = { dx: origDx + (x - startX), dy: origDy + (y - startY) };
+            return next;
+        });
+    };
+
+    const endDrag = () => {
+        dragRef.current.id = null;
+        setDragging(false);
+    };
+
     // ── SVG render ─────────────────────────────────────────────────────────────
     return (
         <div
             ref={containerRef}
             style={{ width: '100%', height: `${ch}px`, background: p.bg, minHeight: 300 }}
         >
-            <svg width={cw} height={ch} style={{ display: 'block' }}>
+            <svg width={cw} height={ch} style={{ display: 'block', userSelect: 'none' }}
+                onMouseMove={e => onMove(e.clientX, e.clientY)}
+                onMouseUp={endDrag}
+                onMouseLeave={endDrag}
+                onTouchMove={e => { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); }}
+                onTouchEnd={endDrag}
+            >
                 <defs>
                     {/* Arrowheads */}
                     <marker id="mkI" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
