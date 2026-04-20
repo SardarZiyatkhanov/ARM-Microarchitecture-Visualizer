@@ -18,7 +18,8 @@ const REG_MAP: Record<string, number> = {
 };
 
 /** Parse a register name like "R0", "SP" → its 4-bit number (0-15). */
-function regNum(name: string): number {
+function regNum(name: string | undefined): number {
+    if (!name) return 0;
     const n = REG_MAP[name.toUpperCase()];
     return n !== undefined ? n : 0;
 }
@@ -29,7 +30,8 @@ function regNum(name: string): number {
  *   "#0xFF" → 255
  *   "5"    →  5
  */
-function parseImm(op: string): number {
+function parseImm(op: string | undefined): number {
+    if (!op) return 0;
     const s = op.replace('#', '').trim();
     return parseInt(s, s.startsWith('0x') || s.startsWith('0X') ? 16 : 10) || 0;
 }
@@ -291,13 +293,13 @@ function encodeInstruction(
 
         /* ── PUSH {Rn}  →  STR Rn, [SP, #-4]! ── */
         case 'PUSH': {
-            const rn = regNum(operands[0].replace(/[{}]/g, ''));
+            const rn = regNum(operands[0]?.replace(/[{}]/g, ''));
             return encode(loadStore(COND_AL, 0, 13, rn, -4, 1, 0, 1));
         }
 
         /* ── POP {Rn}  →  LDR Rn, [SP], #4 ── */
         case 'POP': {
-            const rn = regNum(operands[0].replace(/[{}]/g, ''));
+            const rn = regNum(operands[0]?.replace(/[{}]/g, ''));
             return encode(loadStore(COND_AL, 1, 13, rn, 4, 0, 1, 0));
         }
 
