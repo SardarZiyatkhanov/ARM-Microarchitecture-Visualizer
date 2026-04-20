@@ -47,7 +47,11 @@ function App() {
             return;
         }
         
+        // Safety net: if Firebase never responds, unblock the UI after 5 s
+        const timeout = setTimeout(() => setLoading(false), 5000);
+
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            clearTimeout(timeout);
             setUser(currentUser);
             setLoading(false);
 
@@ -67,7 +71,7 @@ function App() {
                 setNeedsNickname(false);
             }
         });
-        return () => unsubscribe();
+        return () => { unsubscribe(); clearTimeout(timeout); };
     }, []);
 
     // ── Temporary localhost-only test route ─────────────────────────────────
