@@ -248,12 +248,12 @@ export const advancePipeline = (cpu: CpuState, instructions: Instruction[]): Cpu
             decoded.destReg = inst.operands[0];
             decoded.src1Reg = inst.operands[1];
             if (isRegister(inst.operands[2])) decoded.src2Reg = inst.operands[2];
-            else decoded.immValue = parseInt(inst.operands[2].replace('#', ''));
+            else decoded.immValue = parseInt(inst.operands[2]?.replace('#', '') ?? '0');
         } else if (inst.opcode === 'MOV' || inst.opcode === 'CMP') {
             decoded.destReg = inst.operands[0];
             decoded.src1Reg = inst.operands[0];
             if (isRegister(inst.operands[1])) decoded.src2Reg = inst.operands[1];
-            else decoded.immValue = parseInt(inst.operands[1].replace('#', ''));
+            else decoded.immValue = parseInt(inst.operands[1]?.replace('#', '') ?? '0');
         } else if (inst.opcode === 'MUL') {
             decoded.destReg = inst.operands[0];
             decoded.src1Reg = inst.operands[1];
@@ -261,12 +261,12 @@ export const advancePipeline = (cpu: CpuState, instructions: Instruction[]): Cpu
         } else if (inst.opcode === 'LSL' || inst.opcode === 'LSR') {
             decoded.destReg = inst.operands[0];
             decoded.src1Reg = inst.operands[1];
-            decoded.immValue = parseInt(inst.operands[2].replace('#', ''));
+            decoded.immValue = parseInt(inst.operands[2]?.replace('#', '') ?? '0');
         } else if (inst.opcode === 'AND' || inst.opcode === 'ORR' || inst.opcode === 'EOR') {
             decoded.destReg = inst.operands[0];
             decoded.src1Reg = inst.operands[1];
             if (isRegister(inst.operands[2])) decoded.src2Reg = inst.operands[2];
-            else decoded.immValue = parseInt(inst.operands[2].replace('#', ''));
+            else decoded.immValue = parseInt(inst.operands[2]?.replace('#', '') ?? '0');
         } else if (inst.opcode === 'LDR' || inst.opcode === 'STR') {
             decoded.destReg = inst.operands[0];
             decoded.src1Reg = inst.operands[0]; // value register
@@ -277,7 +277,7 @@ export const advancePipeline = (cpu: CpuState, instructions: Instruction[]): Cpu
             decoded.postIndex = mem.postIndex;
         } else if (inst.opcode === 'PUSH') {
             // PUSH {Rn} → STR Rn, [SP, #-4]!
-            const rn = inst.operands[0].replace(/[{}]/g, '');
+            const rn = inst.operands[0]?.replace(/[{}]/g, '') ?? '';
             decoded.src1Reg = rn;
             decoded.src2Reg = 'SP';
             decoded.memOffset = -4;
@@ -285,7 +285,7 @@ export const advancePipeline = (cpu: CpuState, instructions: Instruction[]): Cpu
             decoded.postIndex = false;
         } else if (inst.opcode === 'POP') {
             // POP {Rn} → LDR Rn, [SP], #4
-            const rn = inst.operands[0].replace(/[{}]/g, '');
+            const rn = inst.operands[0]?.replace(/[{}]/g, '') ?? '';
             decoded.destReg = rn;
             decoded.src1Reg = rn;
             decoded.src2Reg = 'SP';
@@ -295,7 +295,7 @@ export const advancePipeline = (cpu: CpuState, instructions: Instruction[]): Cpu
         } else if (inst.opcode === 'B' || inst.opcode === 'BEQ' || inst.opcode === 'BNE'
                 || inst.opcode === 'BGT' || inst.opcode === 'BLT' || inst.opcode === 'BGE'
                 || inst.opcode === 'BLE' || inst.opcode === 'BL') {
-            decoded.immValue = parseInt(inst.operands[0].replace('#', ''));
+            decoded.immValue = parseInt(inst.operands[0]?.replace('#', '') ?? '0');
         } else if (inst.opcode === 'BX') {
             decoded.src1Reg = inst.operands[0];
         }
