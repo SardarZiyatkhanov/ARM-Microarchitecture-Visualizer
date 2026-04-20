@@ -258,6 +258,7 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
         return (
             <g style={{ cursor: isDraggingThis ? 'grabbing' : 'grab' }}
                onMouseDown={e => startDrag(e, i)}
+               onDoubleClick={() => resetBlock(i)}
                onTouchStart={e => startDragTouch(e, i)}>
                 <rect x={lx} y={ty} width={bW} height={bH} rx={10}
                     fill={`url(#${active ? 'gA' : 'gI'})`}
@@ -376,6 +377,14 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
         return { x: clientX - rect.left, y: clientY - rect.top };
     };
 
+    const clampOffset = (id: number, dx: number, dy: number) => {
+        const lx = B[id].l + dx;
+        const ty = bT + dy;
+        const clampedDx = dx - Math.max(0, lx + bW - cw + 4) + Math.min(0, lx - 4);
+        const clampedDy = dy - Math.max(0, ty + bH - ch + 4) + Math.min(0, ty - 4);
+        return { dx: clampedDx, dy: clampedDy };
+    };
+
     const startDrag = (e: React.MouseEvent, id: number) => {
         e.preventDefault();
         const { x, y } = getSvgPos(e.clientX, e.clientY);
@@ -394,9 +403,11 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
         const { id, startX, startY, origDx, origDy } = dragRef.current;
         if (id === null) return;
         const { x, y } = getSvgPos(clientX, clientY);
+        const raw = { dx: origDx + (x - startX), dy: origDy + (y - startY) };
+        const clamped = clampOffset(id, raw.dx, raw.dy);
         setBlockOffsets(prev => {
             const next = [...prev];
-            next[id] = { dx: origDx + (x - startX), dy: origDy + (y - startY) };
+            next[id] = clamped;
             return next;
         });
     };
@@ -406,12 +417,42 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
         setDragging(false);
     };
 
+    const resetBlock = (id: number) => {
+        setBlockOffsets(prev => {
+            const next = [...prev];
+            next[id] = { dx: 0, dy: 0 };
+            return next;
+        });
+    };
+
+    const resetAll = () => setBlockOffsets(Array.from({ length: 5 }, () => ({ dx: 0, dy: 0 })));
+
+    const anyMoved = blockOffsets.some(o => o.dx !== 0 || o.dy !== 0);
+
     // ── SVG render ─────────────────────────────────────────────────────────────
     return (
         <div
             ref={containerRef}
-            style={{ width: '100%', height: `${ch}px`, background: p.bg, minHeight: 300 }}
+            style={{ width: '100%', height: `${ch}px`, background: p.bg, minHeight: 300, position: 'relative' }}
         >
+            {/* Drag hint */}
+            <div style={{
+                position: 'absolute', top: 6, left: 8, fontSize: 10,
+                color: theme === 'dark' ? 'rgba(100,140,200,0.5)' : 'rgba(80,100,140,0.5)',
+                pointerEvents: 'none', fontFamily: 'var(--font-sans)',
+            }}>drag blocks · double-click to reset</div>
+
+            {/* Reset all button — only visible when something has moved */}
+            {anyMoved && (
+                <button onClick={resetAll} style={{
+                    position: 'absolute', top: 4, right: 8,
+                    fontSize: 10, padding: '3px 10px', borderRadius: 5,
+                    background: theme === 'dark' ? 'rgba(30,50,80,0.85)' : 'rgba(220,230,245,0.9)',
+                    color: theme === 'dark' ? '#93c5fd' : '#3b5bdb',
+                    border: `1px solid ${theme === 'dark' ? '#2c4a7c' : '#7ba0c8'}`,
+                    cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                }}>Reset layout</button>
+            )}
             <svg width={cw} height={ch} style={{ display: 'block', userSelect: 'none' }}
                 onMouseMove={e => onMove(e.clientX, e.clientY)}
                 onMouseUp={endDrag}
