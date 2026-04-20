@@ -21,7 +21,7 @@ let auth: any;
 
 if (isFirebaseInitialized) {
     app = initializeApp(firebaseConfig);
-    db = initializeFirestore(app, {});
+    db = initializeFirestore(app, { experimentalForceLongPolling: true });
     auth = getAuth(app);
 } else {
     // Provide safe fallbacks so module export doesn't crash React!

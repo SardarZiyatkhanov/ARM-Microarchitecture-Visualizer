@@ -80,7 +80,10 @@ export const PipelineVisualizer = ({ user, nickname: initialNickname, needsNickn
             setNickname(tempNickname);
             setNeedsNickname(false);
         } catch (err: any) {
-            setNicknameError(err.message ?? 'Failed to save nickname.');
+            const msg = err?.code === 'permission-denied'
+                ? 'Permission denied. Try signing out and back in.'
+                : (err.message ?? 'Failed to save nickname.');
+            setNicknameError(msg);
         } finally {
             setNicknameSaving(false);
         }
@@ -839,6 +842,12 @@ export const PipelineVisualizer = ({ user, nickname: initialNickname, needsNickn
                             style={{ padding: '12px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 700, cursor: nicknameSaving ? 'not-allowed' : 'pointer', opacity: nicknameSaving ? 0.7 : 1, transition: 'opacity 0.2s' }}
                         >
                             {nicknameSaving ? 'Saving…' : 'Set Nickname'}
+                        </button>
+                        <button
+                            onClick={() => setNeedsNickname(false)}
+                            style={{ padding: '8px', background: 'transparent', color: '#64748b', border: 'none', borderRadius: '6px', fontWeight: 500, cursor: 'pointer', fontSize: '0.8rem' }}
+                        >
+                            Skip for now
                         </button>
                     </div>
                 </div>
