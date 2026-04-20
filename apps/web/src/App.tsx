@@ -65,6 +65,9 @@ function App() {
                         setNickname(null);
                         setNeedsNickname(true);
                     }
+                }).catch(() => {
+                    setNickname(null);
+                    setNeedsNickname(true);
                 });
             } else {
                 setNickname(null);

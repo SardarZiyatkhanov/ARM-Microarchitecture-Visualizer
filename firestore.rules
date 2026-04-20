@@ -5,9 +5,9 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
     
-    // Add default deny for other paths until needed
-    match /{document=**} {
-      allow read: if true; // Just for now since it looks like we need to read public programs? Oh wait, let's keep it open for programs.
+    // Public programs collection — readable by anyone, writable only when signed in
+    match /programs/{document=**} {
+      allow read: if true;
       allow write: if request.auth != null;
     }
   }
