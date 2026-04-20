@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useMemo, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Animated } from 'react-native';
 import type { PipelineState } from '@playarm/core';
 import { useAppTheme } from '@/hooks/use-theme';
 import type { AppPalette } from '@/constants/theme';
@@ -72,6 +72,7 @@ function makeStyles(c: AppPalette) {
     dpArrow: { flexDirection: 'row', alignItems: 'center', width: 20 },
     wbLabel: { color: c.borderSubtle, fontSize: 9, fontFamily: 'monospace', textAlign: 'center', paddingHorizontal: 12 },
     wbLabelActive: { color: c.textDim },
+    scrollHint: { color: c.textGhost, fontSize: 9, textAlign: 'center', paddingBottom: 2, fontFamily: 'monospace' },
     hazardRow: { flexDirection: 'row', gap: 6, paddingHorizontal: 12, flexWrap: 'wrap' },
     hazardBadge: { borderRadius: 5, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 3 },
     hazardRaw: { backgroundColor: c.amberBg, borderColor: c.amberBorder },
@@ -82,12 +83,71 @@ function makeStyles(c: AppPalette) {
   });
 }
 
+// ── Animated stage card — pulses on activation ────────────────────────────────
+
+function AnimatedStageCard({ stage, styles, isLast, nextActive }: {
+  stage: StageInfo;
+  styles: ReturnType<typeof makeStyles>;
+  isLast: boolean;
+  nextActive: boolean;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const prevActive = useRef(stage.active);
+
+  useEffect(() => {
+    if (stage.active && !prevActive.current) {
+      Animated.sequence([
+        Animated.timing(scale, { toValue: 1.04, duration: 110, useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 1, duration: 110, useNativeDriver: true }),
+      ]).start();
+    }
+    prevActive.current = stage.active;
+  }, [stage.active]);
+
+  return (
+    <React.Fragment>
+      <Animated.View style={[styles.card, stage.active && styles.cardActive, { transform: [{ scale }] }]}>
+        <View style={styles.cardHeader}>
+          <View style={[styles.numBadge, stage.active && styles.numBadgeActive]}>
+            <Text style={[styles.numBadgeText, stage.active && styles.numBadgeTextActive]}>{stage.num}</Text>
+          </View>
+          <View>
+            <Text style={[styles.cardName, stage.active && styles.cardNameActive]}>{stage.name}</Text>
+            <Text style={styles.cardAbbrev}>{stage.abbrev}</Text>
+          </View>
+        </View>
+        <View style={styles.cardBody}>
+          {stage.instruction ? (
+            <>
+              <Text style={[styles.instrText, stage.active && styles.instrTextActive]} numberOfLines={2}>{stage.instruction}</Text>
+              {stage.detail && <Text style={styles.detailText} numberOfLines={1}>{stage.detail}</Text>}
+              {stage.subDetail && <Text style={styles.subDetailText} numberOfLines={1}>{stage.subDetail}</Text>}
+            </>
+          ) : (
+            <View style={styles.bubbleRow}>
+              <View style={styles.bubbleDot} />
+              <Text style={styles.bubbleText}>bubble</Text>
+            </View>
+          )}
+        </View>
+      </Animated.View>
+      {!isLast && (
+        <View style={styles.pipelineArrow}>
+          <View style={[styles.arrowLine, stage.active && nextActive && styles.arrowLineActive]} />
+          <View style={[styles.arrowHead, stage.active && nextActive && styles.arrowHeadActive]} />
+        </View>
+      )}
+    </React.Fragment>
+  );
+}
+
 interface Props { pipeline: PipelineState; hazards?: string[] }
 
 export default function VisualizerCanvas({ pipeline, hazards = [] }: Props) {
   const c = useAppTheme();
   const styles = useMemo(() => makeStyles(c), [c]);
   const stages = buildStages(pipeline);
+  const activeCount = stages.filter(s => s.active).length;
 
   const BLOCKS = [
     { label: 'INST\nMEM', active: stages[0].active },
@@ -100,41 +160,16 @@ export default function VisualizerCanvas({ pipeline, hazards = [] }: Props) {
     <View style={styles.root}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.stagesScroll}>
         {stages.map((stage, i) => (
-          <React.Fragment key={stage.name}>
-            <View style={[styles.card, stage.active && styles.cardActive]}>
-              <View style={styles.cardHeader}>
-                <View style={[styles.numBadge, stage.active && styles.numBadgeActive]}>
-                  <Text style={[styles.numBadgeText, stage.active && styles.numBadgeTextActive]}>{stage.num}</Text>
-                </View>
-                <View>
-                  <Text style={[styles.cardName, stage.active && styles.cardNameActive]}>{stage.name}</Text>
-                  <Text style={styles.cardAbbrev}>{stage.abbrev}</Text>
-                </View>
-              </View>
-              <View style={styles.cardBody}>
-                {stage.instruction ? (
-                  <>
-                    <Text style={[styles.instrText, stage.active && styles.instrTextActive]} numberOfLines={2}>{stage.instruction}</Text>
-                    {stage.detail && <Text style={styles.detailText} numberOfLines={1}>{stage.detail}</Text>}
-                    {stage.subDetail && <Text style={styles.subDetailText} numberOfLines={1}>{stage.subDetail}</Text>}
-                  </>
-                ) : (
-                  <View style={styles.bubbleRow}>
-                    <View style={styles.bubbleDot} />
-                    <Text style={styles.bubbleText}>bubble</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-            {i < stages.length - 1 && (
-              <View style={styles.pipelineArrow}>
-                <View style={[styles.arrowLine, stage.active && stages[i + 1].active && styles.arrowLineActive]} />
-                <View style={[styles.arrowHead, stage.active && stages[i + 1].active && styles.arrowHeadActive]} />
-              </View>
-            )}
-          </React.Fragment>
+          <AnimatedStageCard
+            key={stage.name}
+            stage={stage}
+            styles={styles}
+            isLast={i === stages.length - 1}
+            nextActive={i < stages.length - 1 ? stages[i + 1].active : false}
+          />
         ))}
       </ScrollView>
+      <Text style={styles.scrollHint}>← scroll · {activeCount} stage{activeCount !== 1 ? 's' : ''} active →</Text>
 
       <View style={styles.divider} />
 

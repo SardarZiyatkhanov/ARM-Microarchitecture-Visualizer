@@ -142,6 +142,29 @@ body.dark .mdb-done { color: #22c55e; background: rgba(34,197,94,0.10); border-c
   line-height: 1.75;
 }
 
+.mdb-editor-inner {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Syntax-highlight overlay — sits behind the transparent textarea */
+.mdb-hl-layer {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 14px 12px;
+  pointer-events: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.75;
+  border: none;
+  background: transparent;
+}
+
 .mdb-gutters {
   flex-shrink: 0;
   padding: 14px 8px 14px 6px;
@@ -160,21 +183,23 @@ body.dark .mdb-gutters { background: #0d1117; border-right-color: #21262d; color
 .mdb-gutter.active { color: #2f81f7; font-weight: 700; }
 
 .mdb-textarea {
-  flex: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
   padding: 14px 12px;
   background: transparent;
   border: none;
   outline: none;
   resize: none;
-  font-family: inherit;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', 'Consolas', monospace;
   font-size: 13px;
   line-height: 1.75;
-  color: #24292f;
-  caret-color: #2f81f7;
-  width: 100%;
-  min-height: 100%;
+  /* Text transparent so the highlight layer shows through */
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  caret-color: #1e293b;
 }
-body.dark .mdb-textarea { color: #e6edf3; }
+body.dark .mdb-textarea { caret-color: #e2e8f0; }
 
 .mdb-errors {
   padding: 10px 14px;

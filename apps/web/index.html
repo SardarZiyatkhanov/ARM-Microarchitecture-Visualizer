@@ -6,28 +6,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title>PlayARM — ARM Pipeline Simulator</title>
-  <meta name="description" content="Interactive ARM assembly simulator. Visualize the 5-stage pipeline, explore virtual memory, and learn ARM architecture with hands-on exercises." />
-  <meta name="keywords" content="ARM, assembly, pipeline, simulator, computer architecture, education, RISC" />
+  <meta name="description" content="Write ARM assembly and watch it flow through the 5-stage pipeline in real time. Visualize Fetch → Decode → Execute → Memory → WriteBack, inspect registers, detect hazards, and learn computer architecture hands-on." />
+  <meta name="keywords" content="ARM, assembly, pipeline simulator, computer architecture, RISC, education, register file, hazard detection, fetch decode execute" />
   <meta name="author" content="Sardar Ziyatkhanov" />
+  <meta name="theme-color" content="#0d1117" />
+  <meta name="color-scheme" content="dark light" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://playarm.app/" />
   <meta property="og:title" content="PlayARM — ARM Pipeline Simulator" />
-  <meta property="og:description" content="Interactive ARM assembly simulator. Visualize the 5-stage pipeline, explore virtual memory, and learn ARM architecture with hands-on exercises." />
+  <meta property="og:description" content="Write ARM assembly and watch it flow through the 5-stage pipeline in real time. Visualize Fetch → Decode → Execute → Memory → WriteBack, inspect registers, and detect hazards." />
   <meta property="og:image" content="https://playarm.app/og-image.png" />
+  <meta property="og:site_name" content="PlayARM" />
+  <meta property="og:locale" content="en_US" />
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:url" content="https://playarm.app/" />
   <meta name="twitter:title" content="PlayARM — ARM Pipeline Simulator" />
-  <meta name="twitter:description" content="Interactive ARM assembly simulator. Visualize the 5-stage pipeline, explore virtual memory, and learn ARM architecture with hands-on exercises." />
+  <meta name="twitter:description" content="Write ARM assembly and watch it flow through the 5-stage pipeline in real time. Visualize Fetch → Decode → Execute → Memory → WriteBack, inspect registers, and detect hazards." />
   <meta name="twitter:image" content="https://playarm.app/og-image.png" />
 
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="alternate icon" href="/favicon.ico" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="alternate icon" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
 
   <!-- Canonical -->
   <link rel="canonical" href="https://playarm.app/" />
@@ -35,13 +39,28 @@
   <!-- Preconnect to Firebase -->
   <link rel="preconnect" href="https://firestore.googleapis.com" />
   <link rel="preconnect" href="https://identitytoolkit.googleapis.com" />
-  <script>
-    window.addEventListener('error', (event) => {
-      document.body.innerHTML += '<div style="color:red;z-index:9999;position:relative;">Global Error: ' + event.message + '</div>';
-    });
-    window.addEventListener('unhandledrejection', (event) => {
-      document.body.innerHTML += '<div style="color:red;z-index:9999;position:relative;">Promise Error: ' + (event.reason ? event.reason.message || event.reason : 'unknown') + '</div>';
-    });
+
+  <!-- Structured data — helps Google show a rich result -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "PlayARM",
+    "url": "https://playarm.app/",
+    "description": "Interactive ARM assembly simulator. Write assembly code and visualize it flowing through the 5-stage pipeline — Fetch, Decode, Execute, Memory, WriteBack. Inspect registers, memory, TLB, and hazard detection in real time.",
+    "applicationCategory": "EducationalApplication",
+    "operatingSystem": "Web",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "author": { "@type": "Person", "name": "Sardar Ziyatkhanov" },
+    "featureList": [
+      "5-stage ARM pipeline visualization",
+      "Live ARM assembly editor with syntax highlighting",
+      "Register file and flags inspector",
+      "Virtual memory and TLB simulation",
+      "Hazard detection (RAW, control)",
+      "Step-by-step and auto-play execution"
+    ]
+  }
   </script>
 </head>
 
