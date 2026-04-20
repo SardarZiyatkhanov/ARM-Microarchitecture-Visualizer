@@ -21,10 +21,7 @@ let auth: any;
 
 if (isFirebaseInitialized) {
     app = initializeApp(firebaseConfig);
-    // Force long polling — fixes WebSocket blocks on university/corporate networks
-    db = initializeFirestore(app, {
-        experimentalForceLongPolling: true
-    });
+    db = initializeFirestore(app, {});
     auth = getAuth(app);
 } else {
     // Provide safe fallbacks so module export doesn't crash React!

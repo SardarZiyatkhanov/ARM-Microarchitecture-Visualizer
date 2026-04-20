@@ -47,22 +47,25 @@ function App() {
             return;
         }
         
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            setUser(currentUser);
+            setLoading(false);
+
+            // Fetch nickname in the background — don't block the initial render
             if (currentUser) {
-                const docSnap = await getDoc(doc(db, 'users', currentUser.uid));
-                if (docSnap.exists()) {
-                    setNickname(docSnap.data().nickname ?? null);
-                    setNeedsNickname(false);
-                } else {
-                    setNickname(null);
-                    setNeedsNickname(true);
-                }
+                getDoc(doc(db, 'users', currentUser.uid)).then(docSnap => {
+                    if (docSnap.exists()) {
+                        setNickname(docSnap.data().nickname ?? null);
+                        setNeedsNickname(false);
+                    } else {
+                        setNickname(null);
+                        setNeedsNickname(true);
+                    }
+                });
             } else {
                 setNickname(null);
                 setNeedsNickname(false);
             }
-            setUser(currentUser);
-            setLoading(false);
         });
         return () => unsubscribe();
     }, []);
