@@ -55,19 +55,34 @@ function App() {
             setUser(currentUser);
             setLoading(false);
 
-            // Fetch nickname in the background — don't block the initial render
             if (currentUser) {
+                const cacheKey = `playarm_nickname_${currentUser.uid}`;
+                const skippedKey = `playarm_nickname_skipped_${currentUser.uid}`;
+
+                // Use cached nickname immediately so UI never flashes the prompt
+                const cached = localStorage.getItem(cacheKey);
+                const skipped = localStorage.getItem(skippedKey) === '1';
+                if (cached) {
+                    setNickname(cached);
+                    setNeedsNickname(false);
+                } else if (skipped) {
+                    setNeedsNickname(false);
+                }
+
+                // Fetch from Firestore in background to stay in sync
                 getDoc(doc(db, 'users', currentUser.uid)).then(docSnap => {
                     if (docSnap.exists()) {
-                        setNickname(docSnap.data().nickname ?? null);
+                        const name = docSnap.data().nickname ?? null;
+                        setNickname(name);
                         setNeedsNickname(false);
-                    } else {
-                        setNickname(null);
+                        if (name) localStorage.setItem(cacheKey, name);
+                    } else if (!cached && !skipped) {
+                        // Doc genuinely doesn't exist yet — prompt once
                         setNeedsNickname(true);
                     }
                 }).catch(() => {
-                    setNickname(null);
-                    setNeedsNickname(true);
+                    // Firestore unreachable — don't bother the user if we have a cache
+                    if (!cached && !skipped) setNeedsNickname(true);
                 });
             } else {
                 setNickname(null);

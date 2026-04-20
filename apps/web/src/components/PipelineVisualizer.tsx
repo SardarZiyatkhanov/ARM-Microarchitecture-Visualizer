@@ -71,22 +71,23 @@ export const PipelineVisualizer = ({ user, nickname: initialNickname, needsNickn
         }
         if (!user) return;
         setNicknameSaving(true);
-        try {
-            await setDoc(doc(db, 'users', user.uid), {
-                nickname: tempNickname,
-                email: user.email,
-                createdAt: new Date(),
-            });
-            setNickname(tempNickname);
-            setNeedsNickname(false);
-        } catch (err: any) {
-            const msg = err?.code === 'permission-denied'
-                ? 'Permission denied. Try signing out and back in.'
-                : (err.message ?? 'Failed to save nickname.');
-            setNicknameError(msg);
-        } finally {
+
+        // Always cache locally first — works even if Firestore rules block the write
+        const cacheKey = `playarm_nickname_${user.uid}`;
+        localStorage.setItem(cacheKey, tempNickname);
+        setNickname(tempNickname);
+        setNeedsNickname(false);
+
+        // Best-effort Firestore write in the background
+        setDoc(doc(db, 'users', user.uid), {
+            nickname: tempNickname,
+            email: user.email,
+            createdAt: new Date(),
+        }).catch(() => {
+            // Firestore write failed silently — localStorage still has it
+        }).finally(() => {
             setNicknameSaving(false);
-        }
+        });
     };
     const [programTitle, setProgramTitle] = useState('ARM Simulator Demo');
     const [instruction, setInstruction] = useState(getProgramFromUrl)
@@ -844,7 +845,10 @@ export const PipelineVisualizer = ({ user, nickname: initialNickname, needsNickn
                             {nicknameSaving ? 'Saving…' : 'Set Nickname'}
                         </button>
                         <button
-                            onClick={() => setNeedsNickname(false)}
+                            onClick={() => {
+                                if (user) localStorage.setItem(`playarm_nickname_skipped_${user.uid}`, '1');
+                                setNeedsNickname(false);
+                            }}
                             style={{ padding: '8px', background: 'transparent', color: '#64748b', border: 'none', borderRadius: '6px', fontWeight: 500, cursor: 'pointer', fontSize: '0.8rem' }}
                         >
                             Skip for now
