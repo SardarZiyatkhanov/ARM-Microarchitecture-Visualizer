@@ -1,5 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Instruction, ParseError } from '@playarm/core';
+
+// ─── ARM syntax highlighter ───────────────────────────────────────────────────
+const OPCODES = new Set([
+    'MOV','MOVS','ADD','ADDS','SUB','SUBS','MUL','AND','ORR','EOR',
+    'LSL','LSR','ASR','CMP','CMN','TST','LDR','STR','LDRB','STRB',
+    'PUSH','POP','B','BEQ','BNE','BGT','BLT','BGE','BLE','BL','BX','BLX',
+]);
+
+const esc = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// Token regex: order matters — most specific first
+const TOKEN_RE = /;.*|(#-?(?:0x[\da-fA-F]+|\d+))|(\[|\]|\{|\})|(\bR[0-7]\b|\bPC\b|\bLR\b|\bSP\b)|(\b[A-Z][A-Z0-9]+\b(?=\s*:))|(\b[A-Z][A-Z0-9]*\b)|(,)/gi;
+
+function highlightArm(code: string, dark: boolean): string {
+    const C = dark ? {
+        opcode:  '#60a5fa', reg: '#fb923c', imm: '#4ade80',
+        label:   '#fbbf24', comment: '#6b7280', bracket: '#94a3b8', comma: '#64748b',
+    } : {
+        opcode:  '#1d4ed8', reg: '#c2410c', imm: '#15803d',
+        label:   '#b45309', comment: '#6b7280', bracket: '#64748b', comma: '#94a3b8',
+    };
+
+    return code.split('\n').map(line => {
+        TOKEN_RE.lastIndex = 0;
+        let out = '';
+        let last = 0;
+        let m: RegExpExecArray | null;
+
+        while ((m = TOKEN_RE.exec(line)) !== null) {
+            out += esc(line.slice(last, m.index));
+            last = m.index + m[0].length;
+
+            const [full,, imm, bracket, reg, labelDef, word, comma] = m;
+
+            if (full[0] === ';') {                              // comment
+                out += `<span style="color:${C.comment};font-style:italic">${esc(full)}</span>`;
+                last = line.length; break;
+            } else if (imm !== undefined) {                     // immediate
+                out += `<span style="color:${C.imm}">${esc(full)}</span>`;
+            } else if (bracket) {                               // [ ] { }
+                out += `<span style="color:${C.bracket}">${esc(full)}</span>`;
+            } else if (reg) {                                   // register
+                out += `<span style="color:${C.reg};font-weight:600">${esc(full)}</span>`;
+            } else if (labelDef) {                              // LABEL:
+                out += `<span style="color:${C.label};font-weight:600">${esc(full)}</span>`;
+            } else if (word && OPCODES.has(word.toUpperCase())) { // opcode
+                out += `<span style="color:${C.opcode};font-weight:700">${esc(word.toUpperCase())}</span>`;
+            } else if (comma) {                                 // comma
+                out += `<span style="color:${C.comma}">,</span>`;
+            } else {
+                out += esc(full);
+            }
+        }
+        out += esc(line.slice(last));
+        return out;
+    }).join('\n');
+}
 
 interface InstructionInputProps {
     code: string;
@@ -111,6 +169,33 @@ export const InstructionInput: React.FC<InstructionInputProps> = ({
 }) => {
     const [viewMode, setViewMode] = useState<'hex' | 'binary'>('hex');
 
+    // ── Syntax highlight state ─────────────────────────────────────────────
+    const [dark, setDark] = useState(
+        document.documentElement.getAttribute('data-theme') !== 'light'
+    );
+    useEffect(() => {
+        const root = document.documentElement;
+        const sync = () => setDark(root.getAttribute('data-theme') !== 'light');
+        const obs = new MutationObserver(() => sync());
+        obs.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+        return () => obs.disconnect();
+    }, []);
+
+    const highlighted = useCallback(
+        () => highlightArm(code, dark),
+        [code, dark]
+    );
+
+    const taRef  = useRef<HTMLTextAreaElement>(null);
+    const preRef = useRef<HTMLPreElement>(null);
+
+    const syncScroll = () => {
+        if (taRef.current && preRef.current) {
+            preRef.current.scrollTop  = taRef.current.scrollTop;
+            preRef.current.scrollLeft = taRef.current.scrollLeft;
+        }
+    };
+
     return (
         <section className="panel instruction-panel">
             {/* ── Header ── */}
@@ -150,19 +235,42 @@ export const InstructionInput: React.FC<InstructionInputProps> = ({
                 />
             </div>
 
-            {/* ── Code editor ── */}
-            <div className="editor-wrapper">
+            {/* ── Code editor with syntax highlighting ── */}
+            <div className="editor-wrapper" style={{ position: 'relative' }}>
+                {/* Highlighted layer (behind) */}
+                <pre
+                    ref={preRef}
+                    aria-hidden
+                    className={`code-editor ${errors.length > 0 ? 'has-errors' : ''}`}
+                    style={{
+                        position: 'absolute', inset: 0, margin: 0,
+                        pointerEvents: 'none', overflow: 'hidden',
+                        whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                        fontFamily: 'inherit', fontSize: 'inherit',
+                        lineHeight: 'inherit', padding: 'inherit',
+                        border: 'transparent',
+                    }}
+                    dangerouslySetInnerHTML={{ __html: highlighted() + '\n' }}
+                />
+                {/* Input layer (on top, transparent text so highlight shows) */}
                 <textarea
+                    ref={taRef}
                     value={code}
                     onChange={(e) => onChange(e.target.value)}
+                    onScroll={syncScroll}
                     className={`code-editor ${errors.length > 0 ? 'has-errors' : ''}`}
                     placeholder="Enter ARM assembly here..."
                     rows={15}
-                    /* MOBILE FIXES */
                     spellCheck={false}
                     autoCapitalize="none"
                     autoCorrect="off"
                     autoComplete="off"
+                    style={{
+                        position: 'relative', background: 'transparent',
+                        color: 'transparent', caretColor: dark ? '#e2e8f0' : '#1e293b',
+                        WebkitTextFillColor: 'transparent',
+                        resize: 'vertical',
+                    }}
                 />
             </div>
 
