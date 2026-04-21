@@ -20,7 +20,7 @@
       }
     },
     "android": {
-      "package": "com.playarm.app",
+      "package": "com.playarm.simulator",
       "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#0f1115",
