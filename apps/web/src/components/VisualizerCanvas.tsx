@@ -36,7 +36,7 @@ const BLOCKS = [0, 1, 2, 3, 4].map(bx);
 // 358 ─ bottom margin ~62 px
 const V = {
     chipCY:   28  / DH,
-    chipLbl:  50  / DH,
+    chipLbl:  62  / DH,
     hduTop:   74  / DH,
     hduH:     46  / DH,
     blkTop:   138 / DH,
@@ -509,7 +509,7 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
                     const done   = currentIdx > i;
                     return (
                         <g key={s.name}>
-                            <circle cx={s.cx} cy={chipCY} r={15}
+                            <circle cx={s.cx} cy={chipCY} r={Math.max(fy(15 / DH), 10)}
                                 fill={active ? p.chipFillA : done ? p.chipFillDone : p.chipFill}
                                 stroke={active || done ? 'none' : p.chipStroke}
                                 strokeWidth={1.5}
@@ -521,7 +521,7 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
                             />
                             <text x={s.cx} y={chipCY}
                                 fill={active || done ? '#fff' : p.chipNum}
-                                fontSize={10} fontWeight={700} fontFamily="var(--font-sans)"
+                                fontSize={Math.max(Math.round(fy(10 / DH)), 7)} fontWeight={700} fontFamily="var(--font-sans)"
                                 textAnchor="middle" dominantBaseline="middle"
                                 style={{ pointerEvents: 'none' }}
                             >{s.n}</text>
