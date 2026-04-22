@@ -247,8 +247,8 @@ export const InstructionInput: React.FC<InstructionInputProps> = ({
                         pointerEvents: 'none', overflow: 'hidden',
                         whiteSpace: 'pre-wrap', wordBreak: 'break-word',
                         fontFamily: 'inherit', fontSize: 'inherit',
-                        lineHeight: 'inherit', padding: 'inherit',
-                        border: 'transparent',
+                        lineHeight: 'inherit', padding: '1rem',
+                        border: '1px solid transparent',
                     }}
                     dangerouslySetInnerHTML={{ __html: highlighted() + '\n' }}
                 />
