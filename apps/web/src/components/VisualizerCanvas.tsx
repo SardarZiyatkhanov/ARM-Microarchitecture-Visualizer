@@ -189,7 +189,7 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
 
     // Stage chips
     const STAGES    = ['Fetch', 'Decode', 'Execute', 'Memory', 'WriteBack'] as const;
-    const chipDefs  = STAGES.map((name, i) => ({ name, cx: B[i].cx, n: `${i + 1}` }));
+    const chipDefs  = STAGES.map((name, i) => ({ name, cx: B[i].cx + blockOffsets[i].dx, n: `${i + 1}` }));
     const chipCY    = fy(V.chipCY);
     const chipLblY  = fy(V.chipLbl);
 
@@ -496,11 +496,11 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
 
                 {/* ── Stage progress bar ────────────────────────────────────── */}
                 {/* background track */}
-                <line x1={B[0].cx} y1={chipCY} x2={B[4].cx} y2={chipCY}
+                <line x1={chipDefs[0].cx} y1={chipCY} x2={chipDefs[4].cx} y2={chipCY}
                     stroke={p.trackBg} strokeWidth={2} />
                 {/* progress fill up to active stage */}
                 {currentIdx > 0 && (
-                    <line x1={B[0].cx} y1={chipCY} x2={B[currentIdx].cx} y2={chipCY}
+                    <line x1={chipDefs[0].cx} y1={chipCY} x2={chipDefs[currentIdx].cx} y2={chipCY}
                         stroke={p.trackFg} strokeWidth={2.5} />
                 )}
                 {/* stage chips */}
