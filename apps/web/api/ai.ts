@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' };
 
-const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent';
+const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions';
 
 interface AIMessage { role: 'user' | 'assistant'; content: string }
 interface AIContext {
@@ -68,10 +68,10 @@ export default async function handler(req: Request): Promise<Response> {
         return new Response('Method Not Allowed', { status: 405 });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
         return new Response(
-            JSON.stringify({ error: 'GEMINI_API_KEY not configured' }),
+            JSON.stringify({ error: 'GROQ_API_KEY not configured' }),
             { status: 500, headers: { 'Content-Type': 'application/json' } }
         );
     }
@@ -86,42 +86,40 @@ export default async function handler(req: Request): Promise<Response> {
     const { messages, context } = body;
     const systemPrompt = buildSystemPrompt(context);
 
-    // Gemini uses "model" for assistant role
-    const contents = messages.map(m => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }],
-    }));
-
-    const geminiRes = await fetch(`${GEMINI_API}?key=${apiKey}&alt=sse`, {
+    const groqRes = await fetch(GROQ_API, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+        },
         body: JSON.stringify({
-            system_instruction: { parts: [{ text: systemPrompt }] },
-            contents,
-            generationConfig: { maxOutputTokens: 1024 },
+            model: 'llama-3.1-8b-instant',
+            max_tokens: 1024,
+            stream: true,
+            messages: [
+                { role: 'system', content: systemPrompt },
+                ...messages.map(m => ({ role: m.role, content: m.content })),
+            ],
         }),
     });
 
-    if (!geminiRes.ok) {
-        const err = await geminiRes.text();
-        return new Response(err, { status: geminiRes.status });
+    if (!groqRes.ok) {
+        const err = await groqRes.text();
+        return new Response(err, { status: groqRes.status });
     }
 
-    // Transform Gemini SSE → our SSE format
+    // Transform Groq/OpenAI SSE → our SSE format
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
         async start(controller) {
-            const reader = geminiRes.body!.getReader();
+            const reader = groqRes.body!.getReader();
             const decoder = new TextDecoder();
             let buf = '';
 
             try {
                 while (true) {
                     const { done, value } = await reader.read();
-                    if (done) {
-                        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-                        break;
-                    }
+                    if (done) break;
 
                     buf += decoder.decode(value, { stream: true });
                     const lines = buf.split('\n');
@@ -130,9 +128,13 @@ export default async function handler(req: Request): Promise<Response> {
                     for (const line of lines) {
                         if (!line.startsWith('data: ')) continue;
                         const data = line.slice(6).trim();
+                        if (data === '[DONE]') {
+                            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                            return;
+                        }
                         try {
                             const evt = JSON.parse(data);
-                            const text = evt?.candidates?.[0]?.content?.parts?.[0]?.text;
+                            const text = evt?.choices?.[0]?.delta?.content;
                             if (text) {
                                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
                             }
@@ -141,6 +143,7 @@ export default async function handler(req: Request): Promise<Response> {
                         }
                     }
                 }
+                controller.enqueue(encoder.encode('data: [DONE]\n\n'));
             } finally {
                 controller.close();
             }
