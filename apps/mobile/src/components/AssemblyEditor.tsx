@@ -229,34 +229,40 @@ export default function AssemblyEditor({
               })}
             </ScrollView>
 
-            {/* Syntax highlighting overlay */}
-            <View style={styles.highlightOverlay} pointerEvents="none">
-              {lines.map((line, i) => (
-                <View key={i} style={styles.highlightLine}>
-                  {tokenizeLine(line, c).map((tok, j) => (
-                    <Text key={j} style={[styles.highlightToken, { color: tok.color }]}>
-                      {tok.text}
-                    </Text>
-                  ))}
-                </View>
-              ))}
-            </View>
+            {/* Code area: overlay + TextInput share the same container so overlay is
+                positioned relative to TextInput's area, not the full editorShell row */}
+            <View style={styles.codeArea}>
+              {/* Syntax highlighting overlay */}
+              <View style={styles.highlightOverlay} pointerEvents="none">
+                {lines.map((line, i) => (
+                  <View key={i} style={styles.highlightLine}>
+                    {tokenizeLine(line, c).map((tok, j) => (
+                      <Text key={j} style={[styles.highlightToken, { color: tok.color }]}>
+                        {tok.text}
+                      </Text>
+                    ))}
+                  </View>
+                ))}
+              </View>
 
-            {/* TextInput (transparent so overlay shows through) */}
-            <TextInput
-              style={[styles.codeInput, styles.codeInputTransparent]}
-              value={draft}
-              onChangeText={setDraft}
-              multiline
-              scrollEnabled={false}
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="off"
-              spellCheck={false}
-              placeholder="Enter ARM assembly here..."
-              placeholderTextColor="#484f58"
-              textAlignVertical="top"
-            />
+              {/* TextInput (transparent so overlay shows through) */}
+              <TextInput
+                style={[styles.codeInput, styles.codeInputTransparent]}
+                value={draft}
+                onChangeText={setDraft}
+                multiline
+                scrollEnabled={false}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="Enter ARM assembly here..."
+                placeholderTextColor="#484f58"
+                textAlignVertical="top"
+                cursorColor={c.accent}
+                selectionColor={c.accentBorder}
+              />
+            </View>
           </View>
 
           {/* ── Error list ── */}
@@ -319,6 +325,7 @@ function makeStyles(c: AppPalette) {
     snippetItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: c.borderSubtle },
     snippetItemText: { color: c.textBody, fontSize: 13, fontWeight: '600' },
     snippetItemArrow: { color: c.textDim, fontSize: 13 },
+    codeArea: { flex: 1 },
     highlightOverlay: { position: 'absolute', top: 8, left: 10, right: 8, bottom: 0, pointerEvents: 'none' },
     highlightLine: { flexDirection: 'row', flexWrap: 'wrap', height: LINE_HEIGHT, alignItems: 'center' },
     highlightToken: { fontFamily: 'monospace', fontSize: FONT_SIZE, lineHeight: LINE_HEIGHT },
