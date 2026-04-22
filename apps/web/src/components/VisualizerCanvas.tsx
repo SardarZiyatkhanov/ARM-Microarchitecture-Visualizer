@@ -27,23 +27,23 @@ function bx(i: number) {
 const BLOCKS = [0, 1, 2, 3, 4].map(bx);
 
 // ─── Vertical layout (px, then converted to fractions of DH) ──────────────────
-// 28 ─ stage chips
-// 50 ─ stage labels
-// 74 ─ HDU box top         (46 px tall → bottom at 120)
-// 138 ─ main blocks top     (108 px tall → bottom at 246)
-// 264 ─ wb-feedback rows
-// 294 ─ FWD box top         (46 px tall → bottom at 340)
-// 358 ─ bottom margin ~62 px
+// 48 ─ stage chips          (shifted down 20 to clear hint text)
+// 70 ─ stage labels
+// 94 ─ HDU box top          (46 px tall → bottom at 140)
+// 158 ─ main blocks top     (108 px tall → bottom at 266)
+// 284 ─ wb-feedback rows
+// 314 ─ FWD box top         (46 px tall → bottom at 360)
+// 360 ─ bottom margin ~60 px
 const V = {
-    chipCY:   28  / DH,
-    chipLbl:  62  / DH,
-    hduTop:   74  / DH,
+    chipCY:   48  / DH,
+    chipLbl:  70  / DH,
+    hduTop:   94  / DH,
     hduH:     46  / DH,
-    blkTop:   138 / DH,
+    blkTop:   158 / DH,
     blkH:     108 / DH,
-    wbRow1:   264 / DH,
-    wbRow2:   280 / DH,
-    fwdTop:   298 / DH,
+    wbRow1:   284 / DH,
+    wbRow2:   300 / DH,
+    fwdTop:   314 / DH,
     fwdH:     46  / DH,
 };
 
