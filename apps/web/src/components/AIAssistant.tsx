@@ -53,33 +53,27 @@ export function AIAssistant({
         streamAIResponse(
             nextMessages,
             context,
-            (chunk) => setStreamingText(prev => prev + chunk),
+            (chunk) => {
+                streamingTextRef.current += chunk;
+                setStreamingText(prev => prev + chunk);
+            },
             () => {
-                setIsStreaming(false);
-                setMessages(prev => [
-                    ...prev,
-                    { role: 'assistant', content: streamingTextRef.current },
-                ]);
-                setStreamingText('');
+                const finalText = streamingTextRef.current;
                 streamingTextRef.current = '';
+                setIsStreaming(false);
+                setMessages(prev => [...prev, { role: 'assistant', content: finalText }]);
+                setStreamingText('');
             },
             (err) => {
-                setIsStreaming(false);
-                setMessages(prev => [
-                    ...prev,
-                    { role: 'assistant', content: `Error: ${err}` },
-                ]);
-                setStreamingText('');
                 streamingTextRef.current = '';
+                setIsStreaming(false);
+                setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${err}` }]);
+                setStreamingText('');
             },
         );
     };
 
-    // Keep a ref in sync with streamingText so the onDone callback captures the latest value
     const streamingTextRef = useRef('');
-    useEffect(() => {
-        streamingTextRef.current = streamingText;
-    }, [streamingText]);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
