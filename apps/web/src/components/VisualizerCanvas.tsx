@@ -36,7 +36,7 @@ const BLOCKS = [0, 1, 2, 3, 4].map(bx);
 // 360 ─ bottom margin ~60 px
 const V = {
     chipCY:   48  / DH,
-    chipLbl:  70  / DH,
+    chipLbl:  84  / DH,
     hduTop:   94  / DH,
     hduH:     46  / DH,
     blkTop:   158 / DH,
