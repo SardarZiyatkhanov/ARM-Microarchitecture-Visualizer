@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Switch, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { useAppTheme } from '@/hooks/use-theme';
 import type { AppPalette } from '@/constants/theme';
 
@@ -142,7 +143,7 @@ export default function SettingsModal({ visible, onClose, settings, onSettingsCh
 
           <View style={styles.appInfo}>
             <Text style={styles.appInfoText}>PlayARM · ARM Pipeline Simulator</Text>
-            <Text style={styles.appInfoVersion}>v1.0.0</Text>
+            <Text style={styles.appInfoVersion}>v{Constants.expoConfig?.version ?? '1.0.0'}</Text>
           </View>
         </ScrollView>
       </View>
