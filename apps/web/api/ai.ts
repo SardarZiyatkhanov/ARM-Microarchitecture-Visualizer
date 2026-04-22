@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' };
 
-const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent';
+const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent';
 
 interface AIMessage { role: 'user' | 'assistant'; content: string }
 interface AIContext {
