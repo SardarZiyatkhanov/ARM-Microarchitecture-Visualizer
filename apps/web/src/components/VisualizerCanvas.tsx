@@ -311,7 +311,7 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
                     style={{ pointerEvents: 'none', letterSpacing: '0.10em' }}
                 >{badge}</text>
                 {/* Full name — BELOW the box, never inside */}
-                <text x={cx2} y={mid(ty + h + 11, 9)}
+                <text x={cx2} y={mid(ty + h + fy(11 / DH), 9)}
                     fill={active ? p.ctrlTxtA : p.ctrlTxt}
                     fontSize={9} fontWeight={600} fontFamily="var(--font-sans)"
                     textAnchor="middle"
@@ -362,7 +362,7 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
             <g>
                 <rect x={lx}      y={bT} width={4} height={bH} fill={p.prBar} opacity={0.75} rx={1} />
                 <rect x={lx + 7}  y={bT} width={4} height={bH} fill={p.prBar} opacity={0.75} rx={1} />
-                <text x={lx + 5.5} y={bB + 14}
+                <text x={lx + 5.5} y={bB + fy(14 / DH)}
                     fill={p.prLbl} fontSize={9} fontFamily="var(--font-mono)"
                     textAnchor="middle" style={{ pointerEvents: 'none' }}
                 >{label}</text>
