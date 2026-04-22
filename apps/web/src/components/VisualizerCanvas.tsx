@@ -442,6 +442,19 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
                 pointerEvents: 'none', fontFamily: 'var(--font-sans)',
             }}>drag blocks · double-click to reset</div>
 
+            {/* Active instruction badge — HTML div so it never overlaps SVG chips */}
+            {currentStage && curInst && (
+                <div style={{
+                    position: 'absolute', top: 6, right: anyMoved ? 90 : 8,
+                    fontSize: 10.5, padding: '3px 10px', borderRadius: 7,
+                    background: theme === 'dark' ? p.statBg : p.statBg,
+                    color: theme === 'dark' ? p.statTxt : p.statTxt,
+                    border: `1.5px solid ${p.statStroke}`,
+                    fontFamily: 'var(--font-mono)', fontWeight: 700,
+                    pointerEvents: 'none', whiteSpace: 'nowrap',
+                }}>{curInst.opcode}  ·  {currentStage}</div>
+            )}
+
             {/* Reset all button — only visible when something has moved */}
             {anyMoved && (
                 <button onClick={resetAll} style={{
@@ -626,25 +639,6 @@ export const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ pipelineStat
                     <Pill x={B[2].l - 4} y={(fwdT + bB) / 2} text="Fwd A/B" anchor="end" />
                 )}
 
-                {/* ── Active instruction status chip ────────────────────────── */}
-                {currentStage && curInst && (() => {
-                    const label = `${curInst.opcode}  ·  ${currentStage}`;
-                    const w2    = label.length * 6.5 + 22;
-                    const rx2   = cw - 12;
-                    return (
-                        <g>
-                            <rect x={rx2 - w2} y={10} width={w2} height={24} rx={7}
-                                fill={p.statBg} stroke={p.statStroke} strokeWidth={1.5}
-                            />
-                            <text x={rx2 - w2 / 2} y={22}
-                                fill={p.statTxt} fontSize={10.5} fontWeight={700}
-                                fontFamily="var(--font-mono)"
-                                textAnchor="middle" dominantBaseline="middle"
-                                style={{ pointerEvents: 'none' }}
-                            >{label}</text>
-                        </g>
-                    );
-                })()}
             </svg>
         </div>
     );
