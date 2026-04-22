@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' };
 
-const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages';
+const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent';
 
 interface AIMessage { role: 'user' | 'assistant'; content: string }
 interface AIContext {
@@ -68,10 +68,10 @@ export default async function handler(req: Request): Promise<Response> {
         return new Response('Method Not Allowed', { status: 405 });
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
         return new Response(
-            JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }),
+            JSON.stringify({ error: 'GEMINI_API_KEY not configured' }),
             { status: 500, headers: { 'Content-Type': 'application/json' } }
         );
     }
@@ -86,39 +86,42 @@ export default async function handler(req: Request): Promise<Response> {
     const { messages, context } = body;
     const systemPrompt = buildSystemPrompt(context);
 
-    const anthropicRes = await fetch(ANTHROPIC_API, {
+    // Gemini uses "model" for assistant role
+    const contents = messages.map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }],
+    }));
+
+    const geminiRes = await fetch(`${GEMINI_API}?key=${apiKey}&alt=sse`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            model: 'claude-haiku-4-5-20251001',
-            max_tokens: 1024,
-            stream: true,
-            system: systemPrompt,
-            messages: messages.map(m => ({ role: m.role, content: m.content })),
+            system_instruction: { parts: [{ text: systemPrompt }] },
+            contents,
+            generationConfig: { maxOutputTokens: 1024 },
         }),
     });
 
-    if (!anthropicRes.ok) {
-        const err = await anthropicRes.text();
-        return new Response(err, { status: anthropicRes.status });
+    if (!geminiRes.ok) {
+        const err = await geminiRes.text();
+        return new Response(err, { status: geminiRes.status });
     }
 
-    // Transform Anthropic SSE → our SSE format
+    // Transform Gemini SSE → our SSE format
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
         async start(controller) {
-            const reader = anthropicRes.body!.getReader();
+            const reader = geminiRes.body!.getReader();
             const decoder = new TextDecoder();
             let buf = '';
 
             try {
                 while (true) {
                     const { done, value } = await reader.read();
-                    if (done) break;
+                    if (done) {
+                        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                        break;
+                    }
 
                     buf += decoder.decode(value, { stream: true });
                     const lines = buf.split('\n');
@@ -127,15 +130,11 @@ export default async function handler(req: Request): Promise<Response> {
                     for (const line of lines) {
                         if (!line.startsWith('data: ')) continue;
                         const data = line.slice(6).trim();
-                        if (data === '[DONE]') continue;
-
                         try {
                             const evt = JSON.parse(data);
-                            if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
-                                const chunk = `data: ${JSON.stringify({ text: evt.delta.text })}\n\n`;
-                                controller.enqueue(encoder.encode(chunk));
-                            } else if (evt.type === 'message_stop') {
-                                controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                            const text = evt?.candidates?.[0]?.content?.parts?.[0]?.text;
+                            if (text) {
+                                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
                             }
                         } catch {
                             // ignore malformed lines
