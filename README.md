@@ -43,10 +43,24 @@ Developed as a **Senior Design Project (SDP)** at **ADA University**, this tool 
 - **Book Programs Tab**: 11 pre-built programs mapped to textbook chapters with chapter filter and full-text search.
 - **Calling Convention Visualization**: Interactive diagram showing AAPCS register roles (arguments, return value, callee-saved, SP, LR, PC).
 
+### 🤖 AI ARM Assistant *(Added April 2026)*
+- **Streaming AI Chat**: Ask questions about ARM assembly, pipeline behavior, or your running program and get instant streamed responses.
+- **Powered by Groq (Llama 3.1)**: Free-tier AI inference via a Vercel Edge Function — no billing required.
+- **Context-Aware**: Answers are grounded in ARM32/64 architecture topics relevant to what the simulator is teaching.
+- **Race-Condition-Free Streaming**: Streaming text written directly via `useRef` in `onChunk` to avoid stale-closure issues with `useEffect`.
+
 ### 🎨 Theme & UI
 - **Dark / Light Mode Toggle** (web): Switch between dark and light themes with preference persisted in localStorage.
 - **System-Adaptive Theme** (mobile): Follows the OS color scheme automatically — no toggle required.
+- **Professional Web Redesign**: Inter (UI) + JetBrains Mono (code) fonts, full CSS custom-property token system, animated pipeline activity cards.
 - **Modern Responsive Design**: Glassmorphism-inspired dark UI with smooth hover effects and micro-animations.
+- **SEO & Discoverability**: Favicon, optimized `<title>` / `<meta description>` tags, and Google Search Console verification.
+
+### 🗺️ Draggable Pipeline Canvas (web)
+- **Drag-to-Reposition**: Each pipeline block on the SVG canvas is draggable — rearrange the diagram to suit your screen.
+- **Bounds Clamping**: Blocks cannot be dragged outside the canvas viewport.
+- **Double-Click Reset**: Double-click any block to snap the entire diagram back to its default layout.
+- **Reset-All Button**: One-click button to restore the full canvas layout.
 
 ### ☁️ Cloud Features
 - **User Authentication**: Sign in / Sign up via Firebase Authentication (email/password, Google, or GitHub OAuth).
@@ -71,7 +85,9 @@ Developed as a **Senior Design Project (SDP)** at **ADA University**, this tool 
 | **Build Tool** | [Vite](https://vitejs.dev/) |
 | **Graphics Engine** | [Fabric.js](http://fabricjs.com/) — dynamic pipeline canvas |
 | **Database / Auth** | [Firebase Firestore](https://firebase.google.com/) + Firebase Auth |
-| **Styling** | Vanilla CSS — dark/light theming, responsive layout |
+| **AI Assistant** | [Groq](https://groq.com/) (Llama 3.1) via Vercel Edge Function — free-tier streaming inference |
+| **Deployment** | [Vercel](https://vercel.com/) — automatic deploys from `main` |
+| **Styling** | CSS custom properties — Inter + JetBrains Mono fonts, dark/light theming |
 
 ### Mobile App
 | Layer | Technology |
@@ -161,8 +177,9 @@ ARM-Microarchitecture-Visualizer/       ← monorepo root
    VITE_FIREBASE_STORAGE_BUCKET=...
    VITE_FIREBASE_MESSAGING_SENDER_ID=...
    VITE_FIREBASE_APP_ID=...
+   VITE_AI_FUNCTION_URL=...   # Vercel Edge Function URL for the AI ARM assistant
    ```
-   > **Note**: If you skip this step the app runs in offline mode — pipeline simulation works fully, but cloud save/load is disabled.
+   > **Note**: Firebase variables are optional — omitting them runs the app in offline mode (pipeline simulation works fully, but cloud save/load is disabled). `VITE_AI_FUNCTION_URL` is required only for the AI assistant panel.
 
 4. **Run the development server**:
    ```bash
@@ -280,6 +297,19 @@ On a **TLB Miss**, the simulator walks the page table, allocates a new physical 
 
 ### April 2026
 
+#### AI ARM Assistant
+- **Vercel Edge Function** — serverless `/api/ai` endpoint streams AI responses with zero cold-start overhead
+- **Groq (Llama 3.1) backend** — switched from Anthropic → Gemini → Groq for a fully free-tier AI integration; no billing required
+- **Streaming chat UI** — streamed tokens written via `streamingTextRef` in `onChunk` callback, bypassing `useEffect` to eliminate race conditions with stale state closures
+
+#### Web App Improvements
+- **ARM syntax highlighting** in the web editor — same token-overlay technique as mobile: keywords (blue), registers (green), immediates (orange), labels (purple), comments (grey)
+- **Draggable SVG pipeline canvas** — blocks can be repositioned by dragging; bounds clamping prevents off-screen placement; double-click resets a single block; reset-all button restores the default layout
+- **Professional redesign** — Inter (UI font) + JetBrains Mono (code font) from Google Fonts; full CSS custom-property token system replaces ad-hoc color literals; animated pipeline activity cards with smooth transitions
+- **Favicon + SEO** — custom favicon, optimized page `<title>` and `<meta name="description">`, Google Search Console site verification
+- **Privacy Policy page** at `/privacy` — required for Google Play Store submission
+- **Android package name** updated to `com.playarm.simulator` for Play Store compliance
+
 #### Mobile App — Full Feature Integration
 - **Instruction Encoding Panel** (`EncodingPanel`) — HEX/BIN toggle, color-coded 32-bit bit-field breakdown (cond, op, I, opcode, S, Rn, Rd, imm/Rm), executing-line highlight
 - **Stats Panel** (`StatsPanel`) — live CPI/IPC, instruction mix bar chart, register and flag activity heat map
@@ -293,6 +323,11 @@ On a **TLB Miss**, the simulator walks the page table, allocates a new physical 
 - **10 new exercises** — negate (two's complement), power-of-2 check, modulo (repeated subtraction), max of two, absolute value, register swap, count set bits, nibble packing, multiply-by-3 without MUL, GCD (Euclidean)
 - **System-adaptive light/dark theme** — `useColorScheme()` drives a 50+ token `appPalette` (dark & light variants) applied via `makeStyles(c: AppPalette)` + `useMemo` across every component; `AppPalette` type broadened to `dark | light` union for correct TypeScript inference
 - **TypeScript** — `npx tsc --noEmit` passes with 0 errors after all changes
+
+#### Bug Fixes & Stability
+- **Pipeline decoder guards** — all `.replace()` and `parseImm()` calls in the core pipeline now guard against `undefined` operands; prevents crashes when typing partial or incomplete instructions
+- **Firebase auth timeout** — added 5-second timeout on auth state resolution so Firebase never blocks the app UI on cold start
+- **Nickname overlay** — fixed edge case trapping users in the nickname prompt; `localStorage` fallback prevents false re-prompts on reload
 
 ---
 
