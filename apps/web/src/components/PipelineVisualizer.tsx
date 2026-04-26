@@ -186,12 +186,17 @@ export const PipelineVisualizer = ({ user, nickname: initialNickname, needsNickn
         // ─────────────────────────────────────────────────────────────────────
 
         // Completion detection: all stages idle after at least one cycle
-        const allIdle = !nextState.pipeline.Fetch.instruction &&
+        // Pipeline is truly done only when all stages are empty AND there are
+        // no more instructions left to fetch. Without the PC check, the simulation
+        // incorrectly stops between instructions when the sequential pipeline
+        // empties momentarily after each WriteBack.
+        const pipelineEmpty = !nextState.pipeline.Fetch.instruction &&
             !nextState.pipeline.Decode.instruction &&
             !nextState.pipeline.Execute.instruction &&
             !nextState.pipeline.Memory.instruction &&
             !nextState.pipeline.WriteBack.instruction;
-        if (allIdle && nextState.clock > 0) {
+        const allFetched = nextState.pc >= parsedInst.length * 4;
+        if (pipelineEmpty && allFetched && nextState.clock > 0) {
             setIsPlaying(false);
             setIsDone(true);
         }
