@@ -168,9 +168,6 @@ export const PipelineVisualizer = ({ user, nickname: initialNickname, needsNickn
         const nextState = advancePipeline(currentCpuState, parsedInst);
 
         // ── TLB: translate address when a LDR/STR enters the Execute stage ──────
-        // memoryAddress is computed during the Decode→Execute transition and
-        // stored on nextState.pipeline.Execute. This is the earliest reliable
-        // point at which the effective address is known.
         const execStage = nextState.pipeline.Execute;
         if (execStage.instruction &&
             (execStage.instruction.opcode === 'LDR' || execStage.instruction.opcode === 'STR') &&
