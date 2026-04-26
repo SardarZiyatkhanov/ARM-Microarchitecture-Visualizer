@@ -78,18 +78,37 @@ const COND_AL = 0b1110;
 const COND_EQ = 0b0000;
 const COND_NE = 0b0001;
 
+/**
+ * Encode an arbitrary value as an ARM 12-bit rotated immediate (bits[11:0]).
+ * ARM encoding: value = ROR(imm8, 2*rot), where rot is bits[11:8] and imm8 is bits[7:0].
+ * Tries all 16 even rotations; returns the first that lets the value fit in 8 bits.
+ * Falls back to truncation for values that cannot be represented (assembler error case).
+ */
+function encodeArmImm12(value: number): number {
+    const v = value >>> 0; // treat as unsigned 32-bit
+    for (let rot = 0; rot < 16; rot++) {
+        const shift = rot * 2;
+        // rotate v LEFT by shift (equivalent to ROR by 32-shift)
+        const rotated = ((v << shift) | (v >>> (32 - shift))) >>> 0;
+        if ((rotated & ~0xFF) === 0) {
+            return ((rot & 0xF) << 8) | (rotated & 0xFF);
+        }
+    }
+    return v & 0xFF; // not representable — truncate (simulator will show parse error)
+}
+
 /** Build a data-processing (immediate) word.
  *  opcode4 is the 4-bit ALU opcode field (bits 24-21). */
 function dpImm(cond: number, opcode4: number, s: number,
-    rn: number, rd: number, imm8: number): number {
-    // bit 25 = 1 (immediate form), bit 27-26 = 00
+    rn: number, rd: number, imm: number): number {
+    const imm12 = encodeArmImm12(imm);
     return ((cond & 0xF) << 28) |
         (1 << 25) |
         ((opcode4 & 0xF) << 21) |
         ((s & 0x1) << 20) |
         ((rn & 0xF) << 16) |
         ((rd & 0xF) << 12) |
-        (imm8 & 0xFF);       // rotate=0, imm8 in [7:0]
+        (imm12 & 0xFFF);
 }
 
 /** Build a data-processing (register) word. */
