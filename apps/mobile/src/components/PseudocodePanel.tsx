@@ -9,11 +9,15 @@ function toPseudocode(line: string): string {
   const t = line.trim();
   let m: RegExpMatchArray | null;
 
-  // MOV
+  // MOV / MVN
   m = t.match(/^MOV\s+(\w+),\s*#(-?\w+)$/i);
   if (m) return `${m[1]} = ${m[2]}`;
   m = t.match(/^MOV\s+(\w+),\s*(\w+)$/i);
   if (m) return `${m[1]} = ${m[2]}`;
+  m = t.match(/^MVN\s+(\w+),\s*#(-?\w+)$/i);
+  if (m) return `${m[1]} = ~${m[2]}`;
+  m = t.match(/^MVN\s+(\w+),\s*(\w+)$/i);
+  if (m) return `${m[1]} = ~${m[2]}`;
 
   // Arithmetic
   m = t.match(/^ADDS?\s+(\w+),\s*(\w+),\s*(\w+)$/i);

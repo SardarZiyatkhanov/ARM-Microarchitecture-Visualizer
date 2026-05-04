@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal, Switch, ScrollView } f
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { useAppTheme } from '@/hooks/use-theme';
+import { useThemeContext, type ThemeMode } from '@/context/ThemeContext';
 import type { AppPalette } from '@/constants/theme';
 
 const SETTINGS_KEY = 'playarm_settings';
@@ -68,6 +69,7 @@ interface SettingsModalProps {
 export default function SettingsModal({ visible, onClose, settings, onSettingsChange }: SettingsModalProps) {
   const c = useAppTheme();
   const styles = useMemo(() => makeStyles(c), [c]);
+  const { themeMode, setThemeMode } = useThemeContext();
 
   function update<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
     const next = { ...settings, [key]: value };
@@ -88,6 +90,29 @@ export default function SettingsModal({ visible, onClose, settings, onSettingsCh
         </View>
 
         <ScrollView contentContainerStyle={styles.content}>
+          <SettingGroup label="APPEARANCE" styles={styles}>
+            <View style={styles.segmented}>
+              {([
+                { key: 'light', label: '☀ Light' },
+                { key: 'system', label: '⊙ System' },
+                { key: 'dark', label: '🌙 Dark' },
+              ] as { key: ThemeMode; label: string }[]).map(opt => (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[styles.segBtn, themeMode === opt.key && styles.segBtnActive]}
+                  onPress={() => setThemeMode(opt.key)}
+                >
+                  <Text style={[styles.segBtnText, themeMode === opt.key && styles.segBtnTextActive]}>
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={styles.settingHint}>
+              {themeMode === 'system' ? 'Follows your device appearance setting' : themeMode === 'dark' ? 'Always use dark theme' : 'Always use light theme'}
+            </Text>
+          </SettingGroup>
+
           <SettingGroup label="DEFAULT NUMBER FORMAT" styles={styles}>
             <View style={styles.segmented}>
               {(['hex', 'dec', 'bin'] as const).map(f => (
@@ -136,7 +161,10 @@ export default function SettingsModal({ visible, onClose, settings, onSettingsCh
           </SettingGroup>
 
           <SettingGroup label="ONBOARDING" styles={styles}>
-            <TouchableOpacity style={styles.resetBtn} onPress={() => update('showOnboarding', true)}>
+            <TouchableOpacity style={styles.resetBtn} onPress={() => {
+              AsyncStorage.removeItem('playarm_onboarding_done').catch(() => {});
+              update('showOnboarding', true);
+            }}>
               <Text style={styles.resetBtnText}>Show intro tutorial again</Text>
             </TouchableOpacity>
           </SettingGroup>

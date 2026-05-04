@@ -520,6 +520,7 @@ export default function PipelineScreen() {
               code={instruction}
               errors={assemblyResult.errors}
               onRun={handleRun}
+              fontSize={settings.editorFontSize}
               executingLine={executingLine}
               breakpoints={breakpoints}
               onBreakpointsChange={setBreakpoints}

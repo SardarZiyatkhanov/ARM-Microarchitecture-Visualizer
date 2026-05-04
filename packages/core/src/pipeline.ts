@@ -29,6 +29,11 @@ export const getControlSignals = (opcode: string): ControlSignals => {
             signals.aluOp = 'MOV';
             signals.aluSrc = 'imm';
             break;
+        case 'MVN':
+            signals.regWrite = true;
+            signals.aluOp = 'MVN';
+            signals.aluSrc = 'imm';
+            break;
         case 'MUL':
             signals.regWrite = true;
             signals.aluOp = 'MUL';
@@ -202,6 +207,7 @@ export const advancePipeline = (cpu: CpuState, instructions: Instruction[]): Cpu
             case 'SUB': res = val1 - val2; break;
             case 'SUBS': res = val1 - val2; break;
             case 'MOV': res = val2; break;
+            case 'MVN': res = ~val2; break;
             case 'MUL': res = val1 * val2; break;
             case 'LSL': res = val1 << (decoded.immValue ?? 0); break;
             case 'LSR': res = val1 >>> (decoded.immValue ?? 0); break;
@@ -249,7 +255,7 @@ export const advancePipeline = (cpu: CpuState, instructions: Instruction[]): Cpu
             decoded.src1Reg = inst.operands[1];
             if (isRegister(inst.operands[2])) decoded.src2Reg = inst.operands[2];
             else decoded.immValue = parseInt(inst.operands[2]?.replace('#', '') ?? '0');
-        } else if (inst.opcode === 'MOV' || inst.opcode === 'CMP') {
+        } else if (inst.opcode === 'MOV' || inst.opcode === 'MVN' || inst.opcode === 'CMP') {
             decoded.destReg = inst.operands[0];
             decoded.src1Reg = inst.operands[0];
             if (isRegister(inst.operands[1])) decoded.src2Reg = inst.operands[1];

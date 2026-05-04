@@ -13,7 +13,7 @@ interface StatsPanelProps {
 
 function categorize(instr: string): string {
   const op = instr.trim().split(/\s+/)[0]?.toUpperCase() ?? '';
-  if (['MOV'].includes(op)) return 'move';
+  if (['MOV', 'MVN'].includes(op)) return 'move';
   if (['ADD', 'SUB', 'SUBS', 'MUL', 'ADDS'].includes(op)) return 'arithmetic';
   if (['AND', 'ORR', 'EOR', 'LSL', 'LSR'].includes(op)) return 'bitwise';
   if (['CMP'].includes(op)) return 'compare';

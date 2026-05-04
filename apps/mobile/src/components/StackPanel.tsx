@@ -14,7 +14,10 @@ interface StackPanelProps {
   registers?: Record<string, number>;
 }
 
-const STACK_BASE = 0xfffc;
+// Initial SP from INITIAL_REGISTERS is 1024, so STACK_BASE is one word below it.
+// The loop runs from current SP up to STACK_BASE, showing only pushed entries.
+const INITIAL_SP = 1024;
+const STACK_BASE = INITIAL_SP - 4; // 1020
 const MAX_STACK_ENTRIES = 32;
 
 function makeStyles(c: AppPalette) {
@@ -69,7 +72,7 @@ export default function StackPanel({ memory = {}, registers = {} }: StackPanelPr
     const value = memory[addr] ?? 0;
     entries.push({
       address: '0x' + addr.toString(16).toUpperCase().padStart(4, '0'),
-      value: '0x' + (value >>> 0).toString(16).toUpperCase().padStart(4, '0'),
+      value: '0x' + (value >>> 0).toString(16).toUpperCase().padStart(8, '0'),
       isSP: addr === sp,
     });
   }

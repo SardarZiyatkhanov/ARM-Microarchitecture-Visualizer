@@ -246,12 +246,27 @@ function encodeInstruction(
 
     switch (opcode) {
 
-        /* ── MOV Rd, #imm  ── */
+        /* ── MOV Rd, #imm  OR  MOV Rd, Rm ── */
         case 'MOV': {
             const rd = regNum(operands[0]);
+            if (operands[1] && !operands[1].startsWith('#') && REG_MAP[operands[1].toUpperCase()] !== undefined) {
+                const rm = regNum(operands[1]);
+                return encode(dpReg(COND_AL, ALU_MOV, 0, 0, rd, rm));
+            }
             const imm = parseImm(operands[1]);
-            // MOV uses Rn=0, the S bit is 0 (don't update flags)
             return encode(dpImm(COND_AL, ALU_MOV, 0, 0, rd, imm));
+        }
+
+        /* ── MVN Rd, #imm  OR  MVN Rd, Rm  (Move Not — bitwise complement) ── */
+        case 'MVN': {
+            const rd = regNum(operands[0]);
+            if (operands[1] && !operands[1].startsWith('#') && REG_MAP[operands[1].toUpperCase()] !== undefined) {
+                const rm = regNum(operands[1]);
+                // ALU opcode for MVN = 0b1111
+                return encode(dpReg(COND_AL, 0b1111, 0, 0, rd, rm));
+            }
+            const imm = parseImm(operands[1]);
+            return encode(dpImm(COND_AL, 0b1111, 0, 0, rd, imm));
         }
 
         /* ── ADD Rd, Rn, #imm  OR  ADD Rd, Rn, Rm ── */
@@ -280,11 +295,14 @@ function encodeInstruction(
             }
         }
 
-        /* ── CMP Rn, #imm  (sets flags, no dest register → Rd=0) ── */
+        /* ── CMP Rn, #imm  OR  CMP Rn, Rm  (sets flags, no dest register → Rd=0) ── */
         case 'CMP': {
             const rn = regNum(operands[0]);
+            if (operands[1] && !operands[1].startsWith('#') && REG_MAP[operands[1].toUpperCase()] !== undefined) {
+                const rm = regNum(operands[1]);
+                return encode(dpReg(COND_AL, ALU_CMP, 1, rn, 0, rm));
+            }
             const imm = parseImm(operands[1]);
-            // CMP always sets flags → S=1.  Rd field is 0000 (ignored).
             return encode(dpImm(COND_AL, ALU_CMP, 1, rn, 0, imm));
         }
 
@@ -452,7 +470,7 @@ function encodeInstruction(
 // ─────────────────────────────────────────────────────────────────────────────
 
 const VALID_OPCODES: Opcode[] = [
-    'ADD', 'SUB', 'MOV', 'LDR', 'STR', 'CMP', 'B', 'BEQ', 'BNE', 'BL', 'BX',
+    'ADD', 'SUB', 'MOV', 'MVN', 'LDR', 'STR', 'CMP', 'B', 'BEQ', 'BNE', 'BL', 'BX',
     'PUSH', 'POP', 'MUL', 'LSL', 'LSR', 'AND', 'ORR', 'EOR', 'SUBS',
     'BGT', 'BLT', 'BGE', 'BLE',
 ];
@@ -466,7 +484,7 @@ export const parseAssembly = (input: string): AssemblyResult => {
     // ── First pass: identify labels and their byte addresses ──────────────────
     let instCount = 0;
     lines.forEach((line) => {
-        const trimmed = line.split('@')[0].trim(); // ignore @-comments
+        const trimmed = line.split('@')[0].split(';')[0].trim(); // ignore @- and ;-comments
         if (!trimmed) return;
 
         if (trimmed.includes(':')) {
@@ -486,7 +504,7 @@ export const parseAssembly = (input: string): AssemblyResult => {
     lines.forEach((line, index) => {
         const lineNumber = index + 1;
         const originalText = line.trim();
-        let trimmed = line.split('@')[0].trim();
+        let trimmed = line.split('@')[0].split(';')[0].trim();
         if (!trimmed) return;
 
         // Strip label prefix (e.g. "LOOP: ADD …" → "ADD …")

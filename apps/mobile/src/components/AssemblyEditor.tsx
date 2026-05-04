@@ -63,12 +63,12 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 const LINE_HEIGHT = 20;
-const FONT_SIZE = 13;
 
 interface AssemblyEditorProps {
   code: string;
   errors: ParseError[];
   onRun: (code: string) => void;
+  fontSize?: number;
   /** 1-based source line number of the instruction currently in the Execute stage. -1 = nothing. */
   executingLine?: number;
   /** 1-based line numbers that have breakpoints set */
@@ -80,6 +80,7 @@ export default function AssemblyEditor({
   code,
   errors,
   onRun,
+  fontSize = 13,
   executingLine = -1,
   breakpoints: externalBreakpoints,
   onBreakpointsChange,
@@ -106,7 +107,7 @@ export default function AssemblyEditor({
   };
 
   const c = useAppTheme();
-  const styles = useMemo(() => makeStyles(c), [c]);
+  const styles = useMemo(() => makeStyles(c, fontSize), [c, fontSize]);
 
   const toggleBreakpoint = (lineNum: number) => {
     const next = new Set(breakpoints);
@@ -287,7 +288,7 @@ export default function AssemblyEditor({
   );
 }
 
-function makeStyles(c: AppPalette) {
+function makeStyles(c: AppPalette, fontSize: number = 13) {
   return StyleSheet.create({
     container: { backgroundColor: c.bg2, borderRadius: 10, borderWidth: 1, borderColor: c.border, overflow: 'hidden' },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 10, backgroundColor: c.bg1, borderBottomWidth: 1, borderBottomColor: c.border },
@@ -328,8 +329,8 @@ function makeStyles(c: AppPalette) {
     codeArea: { flex: 1 },
     highlightOverlay: { position: 'absolute', top: 8, left: 10, right: 8, bottom: 0, pointerEvents: 'none' },
     highlightLine: { flexDirection: 'row', flexWrap: 'wrap', height: LINE_HEIGHT, alignItems: 'center' },
-    highlightToken: { fontFamily: 'monospace', fontSize: FONT_SIZE, lineHeight: LINE_HEIGHT },
-    codeInput: { flex: 1, color: c.textSec, fontFamily: 'monospace', fontSize: FONT_SIZE, lineHeight: LINE_HEIGHT, padding: 8, paddingLeft: 10, minHeight: 140, textAlignVertical: 'top' },
+    highlightToken: { fontFamily: 'monospace', fontSize, lineHeight: LINE_HEIGHT },
+    codeInput: { flex: 1, color: c.textSec, fontFamily: 'monospace', fontSize, lineHeight: LINE_HEIGHT, padding: 8, paddingLeft: 10, minHeight: 140, textAlignVertical: 'top' },
     codeInputTransparent: { color: 'transparent' },
     errorList: { gap: 3 },
     errorRow: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: c.redBg, borderRadius: 5, borderLeftWidth: 2.5, borderLeftColor: c.red, paddingHorizontal: 10, paddingVertical: 5 },
