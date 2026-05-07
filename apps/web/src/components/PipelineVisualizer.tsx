@@ -167,16 +167,16 @@ export const PipelineVisualizer = ({ user, nickname: initialNickname, needsNickn
 
         const nextState = advancePipeline(currentCpuState, parsedInst);
 
-        // ── TLB: translate address when Memory stage has LDR/STR ──────────────
-        const memStage = currentCpuState.pipeline.Memory;
-        if (memStage.instruction &&
-            (memStage.instruction.opcode === 'LDR' || memStage.instruction.opcode === 'STR') &&
-            memStage.memoryAddress !== undefined) {
-            const isWrite = memStage.instruction.opcode === 'STR';
+        // ── TLB: translate address when a LDR/STR enters the Execute stage ──────
+        const execStage = nextState.pipeline.Execute;
+        if (execStage.instruction &&
+            (execStage.instruction.opcode === 'LDR' || execStage.instruction.opcode === 'STR') &&
+            execStage.memoryAddress) {
+            const isWrite = execStage.instruction.opcode === 'STR';
             const { newTlbState, result } = translateAddress(
-                memStage.memoryAddress,
+                execStage.memoryAddress,
                 isWrite,
-                currentCpuState.clock,
+                nextState.clock,
                 tlbRef.current
             );
             tlbRef.current = newTlbState;
@@ -186,12 +186,17 @@ export const PipelineVisualizer = ({ user, nickname: initialNickname, needsNickn
         // ─────────────────────────────────────────────────────────────────────
 
         // Completion detection: all stages idle after at least one cycle
-        const allIdle = !nextState.pipeline.Fetch.instruction &&
+        // Pipeline is truly done only when all stages are empty AND there are
+        // no more instructions left to fetch. Without the PC check, the simulation
+        // incorrectly stops between instructions when the sequential pipeline
+        // empties momentarily after each WriteBack.
+        const pipelineEmpty = !nextState.pipeline.Fetch.instruction &&
             !nextState.pipeline.Decode.instruction &&
             !nextState.pipeline.Execute.instruction &&
             !nextState.pipeline.Memory.instruction &&
             !nextState.pipeline.WriteBack.instruction;
-        if (allIdle && nextState.clock > 0) {
+        const allFetched = nextState.pc >= parsedInst.length * 4;
+        if (pipelineEmpty && allFetched && nextState.clock > 0) {
             setIsPlaying(false);
             setIsDone(true);
         }
